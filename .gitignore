@@ -1,0 +1,20 @@
+# Node.js
+node_modules/
+dist/
+build/
+*.js.map
+
+# PDD artifacts are tracked, but local overrides are not
+.claude/pdd/*.local.md
+
+# Common secrets and environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
