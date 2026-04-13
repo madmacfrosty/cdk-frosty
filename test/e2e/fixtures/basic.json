@@ -1,0 +1,39 @@
+{
+  "version": "tree-0.1",
+  "tree": {
+    "id": "App",
+    "path": "App",
+    "constructInfo": { "fqn": "aws-cdk-lib.App", "version": "2.0.0" },
+    "children": {
+      "MyStack": {
+        "id": "MyStack",
+        "path": "MyStack",
+        "constructInfo": { "fqn": "aws-cdk-lib.Stack", "version": "2.0.0" },
+        "children": {
+          "MyFunction": {
+            "id": "MyFunction",
+            "path": "MyStack/MyFunction",
+            "constructInfo": { "fqn": "aws-cdk-lib.aws_lambda.Function", "version": "2.0.0" },
+            "children": {
+              "EventSourceMapping": {
+                "id": "EventSourceMapping",
+                "path": "MyStack/MyFunction/EventSourceMapping",
+                "constructInfo": { "fqn": "aws-cdk-lib.aws_lambda.EventSourceMapping", "version": "2.0.0" },
+                "attributes": {
+                  "aws:cdk:cloudformation:type": "AWS::Lambda::EventSourceMapping"
+                },
+                "children": {}
+              }
+            }
+          },
+          "Queue": {
+            "id": "Queue",
+            "path": "MyStack/Queue",
+            "constructInfo": { "fqn": "aws-cdk-lib.aws_sqs.Queue", "version": "2.0.0" },
+            "children": {}
+          }
+        }
+      }
+    }
+  }
+}
