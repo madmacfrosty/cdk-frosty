@@ -1,5 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
+import { stripCdkHash } from '../utils';
 
 function findChild(node: CdkNode, id: string): CdkNode | undefined {
   return node.children.find(c => c.id === id);
@@ -52,7 +53,7 @@ export const lambdaSsmEdgeRule: Rule = {
           if (!part || typeof part !== 'object') continue;
           const ref = (part as Record<string, unknown>)['Ref'];
           if (typeof ref !== 'string') continue;
-          const constructId = ref.replace(/[A-F0-9]{8}$/, '');
+          const constructId = stripCdkHash(ref);
           const target = context.findContainer(constructId);
           if (target) targetIds.add(target.id);
         }

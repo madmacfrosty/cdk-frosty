@@ -22,7 +22,7 @@ function makeLambdaNode(statements: unknown[]): CdkNode {
   return { id: 'Fn', path: 'Stack/Fn', fqn: 'aws-cdk-lib.aws_lambda.Function', children: [serviceRole], attributes: {} };
 }
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 describe('lambdaDynamoEdgeRule', () => {
   describe('match', () => {
@@ -58,6 +58,7 @@ describe('lambdaDynamoEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'MyTable' ? container('Stack/MyTable') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaDynamoEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/Fn', targetId: 'Stack/MyTable', label: 'reads/writes' }] });
@@ -79,6 +80,7 @@ describe('lambdaDynamoEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'MyTable' ? container('Stack/MyTable') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaDynamoEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(1);
@@ -99,6 +101,7 @@ describe('lambdaDynamoEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaDynamoEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(2);

@@ -38,7 +38,7 @@ function makeAliasNode(path: string, lambdaLogicalId: string): CdkNode {
   return { id: path.split('/').pop()!, path, fqn: 'aws-cdk-lib.aws_lambda.Alias', children: [resource], attributes: {} };
 }
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 describe('lambdaInvokeEdgeRule', () => {
   describe('match', () => {
@@ -74,6 +74,7 @@ describe('lambdaInvokeEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'TargetFn' ? container('Stack/TargetFn') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaInvokeEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/Fn', targetId: 'Stack/TargetFn', label: 'invokes' }] });
@@ -88,6 +89,7 @@ describe('lambdaInvokeEdgeRule', () => {
         // target.id === node.path → should be excluded
         findContainer: (id) => id === 'Fn' ? container('Stack/Fn') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(lambdaInvokeEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -110,6 +112,7 @@ describe('lambdaInvokeEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'OtherStack/TargetFn' ? container('OtherStack/TargetFn') : undefined,
         findNode: (id) => id === 'OtherStack/MyAlias' ? aliasNode : undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaInvokeEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({
@@ -126,6 +129,7 @@ describe('lambdaInvokeEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'TargetFn' ? container('Stack/TargetFn') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaInvokeEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(1);

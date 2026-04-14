@@ -1,5 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
+import { stripCdkHash } from '../utils';
 
 function findChild(node: CdkNode, id: string): CdkNode | undefined {
   return node.children.find(c => c.id === id);
@@ -37,7 +38,7 @@ export const lambdaInvokeEdgeRule: Rule = {
         // Same-stack: Fn::GetAtt → Lambda construct
         const getAtt = r['Fn::GetAtt'];
         if (Array.isArray(getAtt) && typeof getAtt[0] === 'string') {
-          const constructId = (getAtt[0] as string).replace(/[A-F0-9]{8}$/, '');
+          const constructId = stripCdkHash(getAtt[0] as string);
           const target = context.findContainer(constructId);
           if (target && target.id !== node.path) targetIds.add(target.id);
         }
@@ -59,7 +60,7 @@ export const lambdaInvokeEdgeRule: Rule = {
             const aliasProps = aliasResource?.attributes?.['aws:cdk:cloudformation:props'] as Record<string, unknown> | undefined;
             const fnNameRef = (aliasProps?.functionName as Record<string, unknown> | undefined)?.['Ref'];
             if (typeof fnNameRef === 'string') {
-              const lambdaConstructId = fnNameRef.replace(/[A-F0-9]{8}$/, '');
+              const lambdaConstructId = stripCdkHash(fnNameRef);
               const target = context.findContainer(stackName + '/' + lambdaConstructId);
               if (target && target.id !== node.path) aliasTargetIds.add(target.id);
             }

@@ -417,22 +417,28 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-ChatProxy/ChatRelayDispatcher",
     },
     {
+      "id": "PromoPilot-alpha-Gateway/Gateway/Resource--PromoPilot-alpha-Mcp/McpLambda",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-Gateway/Gateway/Resource",
+      "targetId": "PromoPilot-alpha-Mcp/McpLambda",
+    },
+    {
       "id": "PromoPilot-alpha-RestApi/ServiceLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-alpha-RestApi/ServiceLambda",
       "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
     },
     {
+      "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-alpha-AsyncLifecycle/LifecycleStateMachine",
+      "label": "starts",
+      "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-alpha-AsyncLifecycle/LifecycleStateMachine",
+    },
+    {
       "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-alpha-Secrets/SlackBotToken",
       "label": "reads",
       "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
       "targetId": "PromoPilot-alpha-Secrets/SlackBotToken",
-    },
-    {
-      "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-beta-AsyncLifecycle/LifecycleStateMachine",
-      "label": "starts",
-      "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
-      "targetId": "PromoPilot-beta-AsyncLifecycle/LifecycleStateMachine",
     },
     {
       "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-beta-Gateway/Gateway/Resource",
@@ -532,18 +538,6 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
     },
     {
       "id": "PromoPilot-beta-Gateway/Gateway/Resource--PromoPilot-beta-Mcp/McpLambda",
-      "label": "invokes",
-      "sourceId": "PromoPilot-beta-Gateway/Gateway/Resource",
-      "targetId": "PromoPilot-beta-Mcp/McpLambda",
-    },
-    {
-      "id": "PromoPilot-beta-Gateway/Gateway/Resource--PromoPilot-beta-Mcp/McpLambda--2",
-      "label": "invokes",
-      "sourceId": "PromoPilot-beta-Gateway/Gateway/Resource",
-      "targetId": "PromoPilot-beta-Mcp/McpLambda",
-    },
-    {
-      "id": "PromoPilot-beta-Gateway/Gateway/Resource--PromoPilot-beta-Mcp/McpLambda--3",
       "label": "invokes",
       "sourceId": "PromoPilot-beta-Gateway/Gateway/Resource",
       "targetId": "PromoPilot-beta-Mcp/McpLambda",
@@ -681,22 +675,28 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-ChatProxy/ChatRelayDispatcher",
     },
     {
+      "id": "PromoPilot-gamma-Gateway/Gateway/Resource--PromoPilot-gamma-Mcp/McpLambda",
+      "label": "invokes",
+      "sourceId": "PromoPilot-gamma-Gateway/Gateway/Resource",
+      "targetId": "PromoPilot-gamma-Mcp/McpLambda",
+    },
+    {
       "id": "PromoPilot-gamma-RestApi/ServiceLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-RestApi/ServiceLambda",
       "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
     },
     {
-      "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-beta-AsyncLifecycle/LifecycleStateMachine",
-      "label": "starts",
-      "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
-      "targetId": "PromoPilot-beta-AsyncLifecycle/LifecycleStateMachine",
-    },
-    {
       "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-beta-Gateway/Gateway/Resource",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "targetId": "PromoPilot-beta-Gateway/Gateway/Resource",
+    },
+    {
+      "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-gamma-AsyncLifecycle/LifecycleStateMachine",
+      "label": "starts",
+      "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-AsyncLifecycle/LifecycleStateMachine",
     },
     {
       "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-gamma-Secrets/SlackBotToken",

@@ -20,6 +20,7 @@ export function execute(tree: CdkTree, rules: Rule[]): ArchGraph {
   const pass1Context: RuleContext = {
     findContainer() { return undefined; },
     findNode() { return undefined; },
+    findNodeWhere() { return undefined; },
   };
 
   // Partial container map for Pass-2 lookup (built from Pass-1 results)
@@ -57,6 +58,12 @@ export function execute(tree: CdkTree, rules: Rule[]): ArchGraph {
       if (matches.length === 0) return undefined;
       matches.sort((a, b) => a.path.length - b.path.length);
       return matches[0];
+    },
+    findNodeWhere(predicate: (node: CdkNode) => boolean): CdkNode | undefined {
+      for (const node of nodeMap.values()) {
+        if (predicate(node)) return node;
+      }
+      return undefined;
     },
     findContainer(pathOrFragment: string): ArchContainer | undefined {
       const exact = containerMap.get(pathOrFragment);

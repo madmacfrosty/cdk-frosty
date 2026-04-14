@@ -1,9 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
-
-function stripCdkHash(logicalId: string): string {
-  return logicalId.replace(/[A-F0-9]{8}$/, '');
-}
+import { stripCdkHash } from '../utils';
 
 function findRefInJoin(join: unknown): string | null {
   if (!join || typeof join !== 'object') return null;
