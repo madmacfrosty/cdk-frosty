@@ -1,6 +1,6 @@
 import { execute } from './index';
 import { CdkNode, CdkTree } from '../parser/types';
-import { Rule, RuleContext } from './types';
+import { Rule, RuleContext, RuleOutput } from './types';
 
 function makeNode(id: string, path: string, fqn: string, children: CdkNode[] = []): CdkNode {
   return { id, path, fqn, children, attributes: {}, parentPath: undefined };
@@ -286,6 +286,48 @@ describe('execute', () => {
     execute(makeTree(root), [probe]);
     spy.mockRestore();
     expect(resolved).toBeUndefined();
+  });
+
+  // Test 14: Pass-2 findNode exact path match — hits the early-return branch
+  it('Pass-2 findNode exact path match: returns node without suffix scan', () => {
+    let found: ReturnType<RuleContext['findNode']> = undefined;
+    const probe: Rule = {
+      id: 'probe',
+      priority: 5,
+      match: (n) => n.fqn === 'probe',
+      apply(_, context) { found = context.findNode('Stack/Fn'); return null; },
+    };
+    const lambdaRule = containerRule('lambda', 'lambda', 10);
+    const root = makeNode('App', 'App', 'x', [
+      makeNode('Stack', 'Stack', 'x', [
+        makeNode('Fn', 'Stack/Fn', 'lambda'),
+        makeNode('Probe', 'Stack/Probe', 'probe'),
+      ]),
+    ]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    execute(makeTree(root), [lambdaRule, probe]);
+    spy.mockRestore();
+    expect(found).toBeDefined();
+    expect(found!.path).toBe('Stack/Fn');
+  });
+
+  // Test 15: Pass-2 edges (plural) kind — all items added to edge list
+  it('Pass-2 edges (plural) kind: all items added to graph edges', () => {
+    const edgesRule: Rule = {
+      id: 'multi-edge',
+      priority: 5,
+      match: (n) => n.fqn === 'source',
+      apply(): RuleOutput {
+        return { kind: 'edges', items: [{ sourceId: 'a', targetId: 'b' }, { sourceId: 'a', targetId: 'c' }] };
+      },
+    };
+    const root = makeNode('App', 'App', 'x', [makeNode('Source', 'Stack/Source', 'source')]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const graph = execute(makeTree(root), [edgesRule]);
+    spy.mockRestore();
+    expect(graph.edges).toHaveLength(2);
+    expect(graph.edges.map(e => e.id)).toContain('a--b');
+    expect(graph.edges.map(e => e.id)).toContain('a--c');
   });
 
   // Test 13: Priority-100 rule returning null in Pass 2 — short-circuits with break
