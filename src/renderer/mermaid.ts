@@ -1,4 +1,4 @@
-import { ArchContainer, ArchEdge, ArchGraph } from '../graph/types';
+import { ArchContainer, ArchEdge, ArchGraph } from '../engine/types';
 
 function sanitizeId(cdkPath: string): string {
   return cdkPath.replace(/[^a-zA-Z0-9]/g, '_');

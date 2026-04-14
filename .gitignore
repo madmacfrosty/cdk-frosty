@@ -18,3 +18,9 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Generated and local artifacts
+coverage/
+tree.html
+tree.json
+pull-artifact.sh

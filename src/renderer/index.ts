@@ -1,4 +1,4 @@
-import { ArchGraph } from '../graph/types';
+import { ArchGraph } from '../engine/types';
 import { archGraphToMermaid } from './mermaid';
 import { wrapInHtml } from './template';
 

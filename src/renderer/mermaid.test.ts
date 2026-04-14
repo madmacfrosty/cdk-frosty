@@ -1,5 +1,5 @@
 import { archGraphToMermaid } from './mermaid';
-import { ArchGraph, ArchContainer, ArchEdge } from '../graph/types';
+import { ArchGraph, ArchContainer, ArchEdge } from '../engine/types';
 
 function makeGraph(containers: ArchContainer[], edges: ArchEdge[] = [], roots?: string[]): ArchGraph {
   const cmap = new Map<string, ArchContainer>();

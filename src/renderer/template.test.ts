@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { wrapInHtml } from './template';
 import { render } from './index';
-import { ArchGraph } from '../graph/types';
+import { ArchGraph } from '../engine/types';
 
 const vendorPath = path.resolve(__dirname, '..', '..', 'vendor', 'mermaid.min.js');
 const vendorContent = fs.readFileSync(vendorPath, 'utf8');

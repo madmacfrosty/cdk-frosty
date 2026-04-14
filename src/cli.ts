@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
 import { parse } from './parser';
-import { loadRules } from './engine/registry';
-import { transform } from './engine';
-import { buildGraph } from './graph';
+import { loadRules } from './rules/registry';
+import { execute } from './engine';
 import { render } from './renderer';
 
 function stripAnsi(str: string): string {
@@ -34,8 +33,7 @@ function main(): void {
       try {
         const tree = parse(input);
         const rules = loadRules(rulesPaths, options.stack);
-        const outputMap = transform(tree, rules);
-        const graph = buildGraph(outputMap, tree);
+        const graph = execute(tree, rules);
         const html = render(graph);
         fs.writeFileSync(outputPath, html);
         process.stdout.write(`Architecture diagram written to: ${path.resolve(outputPath)}\n`);

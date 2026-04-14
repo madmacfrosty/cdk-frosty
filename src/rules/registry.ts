@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Rule } from './types';
-import { stackFilter } from '../rules/filters/stack';
+import { Rule } from '../engine/types';
+import { stackFilter } from './filters/stack';
 
 function stripAnsi(str: string): string {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
@@ -26,7 +26,7 @@ function validateRule(rule: unknown, index: number, filePath: string): Rule {
 
 export function loadRules(userRulesPaths: string[], stackPattern?: string): Rule[] {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { defaultRules } = require('../rules/default/index') as { defaultRules: Rule[] };
+  const { defaultRules } = require('./default/index') as { defaultRules: Rule[] };
   const rules: Rule[] = [...defaultRules];
 
   if (stackPattern) {
