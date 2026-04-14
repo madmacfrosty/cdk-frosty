@@ -327,10 +327,10 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
   ],
   "edges": [
     {
-      "id": "PromoPilot-alpha-AsyncLifecycle/LifecycleLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-alpha-AsyncLifecycle/LifecycleLambda--PromoPilot-alpha-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-alpha-AsyncLifecycle/LifecycleLambda",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-alpha-AsyncLifecycle/LifecycleStateMachine--PromoPilot-beta-AsyncLifecycle/LifecycleLambda",
@@ -351,10 +351,22 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
+      "id": "PromoPilot-alpha-Canary/CanaryRunner--PromoPilot-alpha-ChatProxy/ChatWebSocketApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-Canary/CanaryRunner",
+      "targetId": "PromoPilot-alpha-ChatProxy/ChatWebSocketApi",
+    },
+    {
       "id": "PromoPilot-alpha-Canary/CanaryRunner--PromoPilot-beta-Canary/CanaryTestEmployee",
       "label": "writes",
       "sourceId": "PromoPilot-alpha-Canary/CanaryRunner",
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
+    },
+    {
+      "id": "PromoPilot-alpha-Canary/RestApiCanaryRunner--PromoPilot-alpha-RestApi/ServiceRestApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-Canary/RestApiCanaryRunner",
+      "targetId": "PromoPilot-alpha-RestApi/ServiceRestApi",
     },
     {
       "id": "PromoPilot-alpha-Canary/RestApiCanaryRunner--PromoPilot-beta-Canary/CanaryTestEmployee",
@@ -363,28 +375,28 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
+      "id": "PromoPilot-alpha-Canary/ReviewerFinderCanary--PromoPilot-alpha-Runtime/AgentCoreRuntime",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-Canary/ReviewerFinderCanary",
+      "targetId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
+    },
+    {
       "id": "PromoPilot-alpha-Canary/ReviewerFinderCanary--PromoPilot-beta-Canary/CanaryTestEmployee",
       "label": "writes",
       "sourceId": "PromoPilot-alpha-Canary/ReviewerFinderCanary",
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
-      "id": "PromoPilot-alpha-Canary/ReviewerFinderCanary--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-alpha-Canary/ReviewerSorterCanary--PromoPilot-alpha-Runtime/AgentCoreRuntime",
       "label": "invokes",
-      "sourceId": "PromoPilot-alpha-Canary/ReviewerFinderCanary",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "sourceId": "PromoPilot-alpha-Canary/ReviewerSorterCanary",
+      "targetId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-alpha-Canary/ReviewerSorterCanary--PromoPilot-beta-Canary/CanaryTestEmployee",
       "label": "writes",
       "sourceId": "PromoPilot-alpha-Canary/ReviewerSorterCanary",
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
-    },
-    {
-      "id": "PromoPilot-alpha-Canary/ReviewerSorterCanary--PromoPilot-beta-Runtime/AgentCoreRuntime",
-      "label": "invokes",
-      "sourceId": "PromoPilot-alpha-Canary/ReviewerSorterCanary",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-alpha-ChatProxy/ChatRelayDispatcher--PromoPilot-beta-ChatProxy/ChatRelayWorker",
@@ -399,16 +411,16 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-ChatProxy/ChatSessionTable",
     },
     {
+      "id": "PromoPilot-alpha-ChatProxy/ChatRelayWorker--PromoPilot-alpha-Runtime/AgentCoreRuntime",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-ChatProxy/ChatRelayWorker",
+      "targetId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
+    },
+    {
       "id": "PromoPilot-alpha-ChatProxy/ChatRelayWorker--PromoPilot-beta-ChatProxy/PromoPilotTable",
       "label": "reads/writes",
       "sourceId": "PromoPilot-alpha-ChatProxy/ChatRelayWorker",
       "targetId": "PromoPilot-beta-ChatProxy/PromoPilotTable",
-    },
-    {
-      "id": "PromoPilot-alpha-ChatProxy/ChatRelayWorker--PromoPilot-beta-Runtime/AgentCoreRuntime",
-      "label": "invokes",
-      "sourceId": "PromoPilot-alpha-ChatProxy/ChatRelayWorker",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-alpha-ChatProxy/ChatWebSocketApi--PromoPilot-beta-ChatProxy/ChatRelayDispatcher",
@@ -423,10 +435,16 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-alpha-Mcp/McpLambda",
     },
     {
-      "id": "PromoPilot-alpha-RestApi/ServiceLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-alpha-RestApi/ServiceLambda--PromoPilot-alpha-ChatProxy/PromoPilotTable",
+      "label": "reads/writes",
+      "sourceId": "PromoPilot-alpha-RestApi/ServiceLambda",
+      "targetId": "PromoPilot-alpha-ChatProxy/PromoPilotTable",
+    },
+    {
+      "id": "PromoPilot-alpha-RestApi/ServiceLambda--PromoPilot-alpha-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-alpha-RestApi/ServiceLambda",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-alpha-AsyncLifecycle/LifecycleStateMachine",
@@ -435,16 +453,16 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-alpha-AsyncLifecycle/LifecycleStateMachine",
     },
     {
+      "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-alpha-Gateway/Gateway/Resource",
+      "label": "invokes",
+      "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-alpha-Gateway/Gateway/Resource",
+    },
+    {
       "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-alpha-Secrets/SlackBotToken",
       "label": "reads",
       "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
       "targetId": "PromoPilot-alpha-Secrets/SlackBotToken",
-    },
-    {
-      "id": "PromoPilot-alpha-Runtime/AgentCoreRuntime--PromoPilot-beta-Gateway/Gateway/Resource",
-      "label": "invokes",
-      "sourceId": "PromoPilot-alpha-Runtime/AgentCoreRuntime",
-      "targetId": "PromoPilot-beta-Gateway/Gateway/Resource",
     },
     {
       "id": "PromoPilot-beta-AsyncLifecycle/LifecycleLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
@@ -477,10 +495,22 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
+      "id": "PromoPilot-beta-Canary/CanaryRunner--PromoPilot-beta-ChatProxy/ChatWebSocketApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-beta-Canary/CanaryRunner",
+      "targetId": "PromoPilot-beta-ChatProxy/ChatWebSocketApi",
+    },
+    {
       "id": "PromoPilot-beta-Canary/RestApiCanaryRunner--PromoPilot-beta-Canary/CanaryTestEmployee",
       "label": "writes",
       "sourceId": "PromoPilot-beta-Canary/RestApiCanaryRunner",
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
+    },
+    {
+      "id": "PromoPilot-beta-Canary/RestApiCanaryRunner--PromoPilot-beta-RestApi/ServiceRestApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-beta-Canary/RestApiCanaryRunner",
+      "targetId": "PromoPilot-beta-RestApi/ServiceRestApi",
     },
     {
       "id": "PromoPilot-beta-Canary/ReviewerFinderCanary--PromoPilot-beta-Canary/CanaryTestEmployee",
@@ -543,6 +573,12 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Mcp/McpLambda",
     },
     {
+      "id": "PromoPilot-beta-RestApi/ServiceLambda--PromoPilot-beta-ChatProxy/PromoPilotTable",
+      "label": "reads/writes",
+      "sourceId": "PromoPilot-beta-RestApi/ServiceLambda",
+      "targetId": "PromoPilot-beta-ChatProxy/PromoPilotTable",
+    },
+    {
       "id": "PromoPilot-beta-RestApi/ServiceLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-beta-RestApi/ServiceLambda",
@@ -585,10 +621,10 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Secrets/SlackBotToken",
     },
     {
-      "id": "PromoPilot-gamma-AsyncLifecycle/LifecycleLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-gamma-AsyncLifecycle/LifecycleLambda--PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-AsyncLifecycle/LifecycleLambda",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-gamma-AsyncLifecycle/LifecycleStateMachine--PromoPilot-beta-AsyncLifecycle/LifecycleLambda",
@@ -615,10 +651,22 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
+      "id": "PromoPilot-gamma-Canary/CanaryRunner--PromoPilot-gamma-ChatProxy/ChatWebSocketApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-gamma-Canary/CanaryRunner",
+      "targetId": "PromoPilot-gamma-ChatProxy/ChatWebSocketApi",
+    },
+    {
       "id": "PromoPilot-gamma-Canary/RestApiCanaryRunner--PromoPilot-beta-Canary/CanaryTestEmployee",
       "label": "writes",
       "sourceId": "PromoPilot-gamma-Canary/RestApiCanaryRunner",
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
+    },
+    {
+      "id": "PromoPilot-gamma-Canary/RestApiCanaryRunner--PromoPilot-gamma-RestApi/ServiceRestApi",
+      "label": "invokes",
+      "sourceId": "PromoPilot-gamma-Canary/RestApiCanaryRunner",
+      "targetId": "PromoPilot-gamma-RestApi/ServiceRestApi",
     },
     {
       "id": "PromoPilot-gamma-Canary/ReviewerFinderCanary--PromoPilot-beta-Canary/CanaryTestEmployee",
@@ -627,10 +675,10 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
-      "id": "PromoPilot-gamma-Canary/ReviewerFinderCanary--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-gamma-Canary/ReviewerFinderCanary--PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-Canary/ReviewerFinderCanary",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-gamma-Canary/ReviewerSorterCanary--PromoPilot-beta-Canary/CanaryTestEmployee",
@@ -639,10 +687,10 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-Canary/CanaryTestEmployee",
     },
     {
-      "id": "PromoPilot-gamma-Canary/ReviewerSorterCanary--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-gamma-Canary/ReviewerSorterCanary--PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-Canary/ReviewerSorterCanary",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-gamma-ChatProxy/ChatRelayDispatcher--PromoPilot-beta-ChatProxy/ChatRelayWorker",
@@ -663,10 +711,10 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-beta-ChatProxy/PromoPilotTable",
     },
     {
-      "id": "PromoPilot-gamma-ChatProxy/ChatRelayWorker--PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "id": "PromoPilot-gamma-ChatProxy/ChatRelayWorker--PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "label": "invokes",
       "sourceId": "PromoPilot-gamma-ChatProxy/ChatRelayWorker",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-gamma-ChatProxy/ChatWebSocketApi--PromoPilot-beta-ChatProxy/ChatRelayDispatcher",
@@ -681,22 +729,28 @@ exports[`integration: graph snapshot produces a stable graph from cdk-tree.json 
       "targetId": "PromoPilot-gamma-Mcp/McpLambda",
     },
     {
-      "id": "PromoPilot-gamma-RestApi/ServiceLambda--PromoPilot-beta-Runtime/AgentCoreRuntime",
-      "label": "invokes",
+      "id": "PromoPilot-gamma-RestApi/ServiceLambda--PromoPilot-gamma-ChatProxy/PromoPilotTable",
+      "label": "reads/writes",
       "sourceId": "PromoPilot-gamma-RestApi/ServiceLambda",
-      "targetId": "PromoPilot-beta-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-ChatProxy/PromoPilotTable",
     },
     {
-      "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-beta-Gateway/Gateway/Resource",
+      "id": "PromoPilot-gamma-RestApi/ServiceLambda--PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "label": "invokes",
-      "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
-      "targetId": "PromoPilot-beta-Gateway/Gateway/Resource",
+      "sourceId": "PromoPilot-gamma-RestApi/ServiceLambda",
+      "targetId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
     },
     {
       "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-gamma-AsyncLifecycle/LifecycleStateMachine",
       "label": "starts",
       "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
       "targetId": "PromoPilot-gamma-AsyncLifecycle/LifecycleStateMachine",
+    },
+    {
+      "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-gamma-Gateway/Gateway/Resource",
+      "label": "invokes",
+      "sourceId": "PromoPilot-gamma-Runtime/AgentCoreRuntime",
+      "targetId": "PromoPilot-gamma-Gateway/Gateway/Resource",
     },
     {
       "id": "PromoPilot-gamma-Runtime/AgentCoreRuntime--PromoPilot-gamma-Secrets/SlackBotToken",
