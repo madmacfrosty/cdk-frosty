@@ -1,9 +1,8 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
 
-// Gateway container: match the CfnGateway resource, label from parent id
 export const agentcoreGatewayRule: Rule = {
-  id: 'default/agentcore-gateway',
+  id: 'project/agentcore-gateway',
   priority: 50,
   match(node) {
     return node.fqn === 'aws-cdk-lib.aws_bedrockagentcore.CfnGateway';
@@ -15,9 +14,8 @@ export const agentcoreGatewayRule: Rule = {
   },
 };
 
-// AgentCoreRuntime → Gateway edge: Runtime env vars contain GATEWAY_ENDPOINTS referencing the Gateway
 export const agentcoreRuntimeGatewayEdgeRule: Rule = {
-  id: 'default/agentcore-runtime-gateway-edge',
+  id: 'project/agentcore-runtime-gateway-edge',
   priority: 50,
   match(node) {
     return node.fqn === '@aws-cdk/aws-bedrock-agentcore-alpha.Runtime';
@@ -38,9 +36,8 @@ export const agentcoreRuntimeGatewayEdgeRule: Rule = {
   },
 };
 
-// Gateway → McpLambda edge: GatewayTarget targetConfiguration points to McpLambda
 export const agentcoreGatewayMcpEdgeRule: Rule = {
-  id: 'default/agentcore-gateway-mcp-edge',
+  id: 'project/agentcore-gateway-mcp-edge',
   priority: 50,
   match(node) {
     return node.fqn === 'aws-cdk-lib.aws_bedrockagentcore.CfnGatewayTarget';
@@ -48,7 +45,6 @@ export const agentcoreGatewayMcpEdgeRule: Rule = {
   apply(node: CdkNode, context: RuleContext): RuleOutput {
     const props = node.attributes?.['aws:cdk:cloudformation:props'] as Record<string, unknown> | undefined;
 
-    // Find Gateway via gatewayIdentifier.Fn::GetAtt
     const gatewayId = props?.gatewayIdentifier as Record<string, unknown> | undefined;
     const getAtt = gatewayId?.['Fn::GetAtt'];
     if (!Array.isArray(getAtt) || typeof getAtt[0] !== 'string') return null;
@@ -56,7 +52,6 @@ export const agentcoreGatewayMcpEdgeRule: Rule = {
     const gateway = context.findContainer(gatewayConstructId + '/Resource');
     if (!gateway) return null;
 
-    // Find McpLambda — GatewayTarget always routes to the MCP Lambda
     const mcpLambda = context.findContainer('McpLambda');
     if (!mcpLambda) return null;
 

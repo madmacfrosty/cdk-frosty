@@ -21,6 +21,6 @@ Thumbs.db
 
 # Generated and local artifacts
 coverage/
-tree.html
-tree.json
+/tree.html
+/tree.json
 pull-artifact.sh

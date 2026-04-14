@@ -27,7 +27,9 @@ function validateRule(rule: unknown, index: number, filePath: string): Rule {
 export function loadRules(userRulesPaths: string[], stackPattern?: string): Rule[] {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { defaultRules } = require('./default/index') as { defaultRules: Rule[] };
-  const rules: Rule[] = [...defaultRules];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { projectRules } = require('./project/index') as { projectRules: Rule[] };
+  const rules: Rule[] = [...defaultRules, ...projectRules];
 
   if (stackPattern) {
     rules.push(stackFilter(stackPattern));

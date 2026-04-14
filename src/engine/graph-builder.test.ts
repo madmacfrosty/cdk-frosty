@@ -154,4 +154,32 @@ describe('execute — graph building', () => {
     const graph = buildGraph(map);
     expect(graph.containers.get('Stack/Fn')!.metadata['tier']).toBe('gold');
   });
+
+  // Test 12: orphaned metadata warning with non-empty edge list — covers some() callback
+  it('orphaned metadata with other edges present: some() callback called; warning emitted', () => {
+    const n1 = cdkNode('n1');
+    const n2 = cdkNode('n2');
+    const tree = makeTree(n1, n2);
+    const rules: Rule[] = [
+      containerRule('n1', 'N1'),
+      containerRule('n2', 'N2'),
+      // n1 produces a real edge in Pass 2
+      {
+        id: 'test/real-edge', priority: 40,
+        match(n) { return n.path === 'n1'; },
+        apply(): RuleOutput { return { kind: 'edge', sourceId: 'n1', targetId: 'n2' }; },
+      },
+      // n2 produces orphaned metadata in Pass 2
+      {
+        id: 'test/orphan-meta', priority: 40,
+        match(n) { return n.path === 'n2'; },
+        apply(): RuleOutput { return { kind: 'metadata', targetEdgeSourceId: 'ghost', targetEdgeTargetId: 'ghost2', key: 'k', value: 'v' }; },
+      },
+    ];
+    const graph = execute(tree, rules);
+    const warnings = (stderrSpy.mock.calls as string[][]).flat().join('');
+    expect(warnings).toContain('ghost');
+    expect(graph.edges).toHaveLength(1);
+    expect(graph.edges[0].id).toBe('n1--n2');
+  });
 });

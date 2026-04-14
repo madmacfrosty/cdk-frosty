@@ -7,8 +7,6 @@ export const lambdaRule: Rule = {
     return node.fqn === 'aws-cdk-lib.aws_lambda.Function';
   },
   apply(node) {
-    if (node.id === 'framework-onEvent') return null;
-    if (node.id === 'Lambda' && node.parentPath?.endsWith('/CustomCopy')) return null;
     return { kind: 'container', label: node.id, containerType: 'lambda' };
   },
 };
