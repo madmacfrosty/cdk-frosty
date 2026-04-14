@@ -1,5 +1,5 @@
 import { archGraphToMermaid } from './mermaid';
-import { ArchGraph, ArchContainer, ArchEdge } from '../graph/types';
+import { ArchGraph, ArchContainer, ArchEdge } from '../engine/types';
 
 function makeGraph(containers: ArchContainer[], edges: ArchEdge[] = [], roots?: string[]): ArchGraph {
   const cmap = new Map<string, ArchContainer>();
@@ -8,8 +8,8 @@ function makeGraph(containers: ArchContainer[], edges: ArchEdge[] = [], roots?: 
   return { containers: cmap, edges, roots: r };
 }
 
-function container(id: string, label: string, parentId?: string, groupLabel?: string): ArchContainer {
-  return { id, label, containerType: 'test', cdkPath: id, parentId, groupLabel, metadata: {} };
+function container(id: string, label: string, parentId?: string, groupId?: string): ArchContainer {
+  return { id, label, containerType: 'test', cdkPath: id, parentId, groupId, groupLabel: groupId, metadata: {} };
 }
 
 function edge(sourceId: string, targetId: string, label?: string): ArchEdge {
@@ -36,12 +36,13 @@ describe('archGraphToMermaid', () => {
     expect(output).toContain('end');
   });
 
-  // Test 3: group label prefix
-  it('group label: container label prefixed with [GroupName]', () => {
+  // Test 3: group renders as a Mermaid subgraph containing its members
+  it('group label: container rendered inside a named subgraph', () => {
     const c = container('Stack_Fn', 'Fn', undefined, 'Compute');
     const graph = makeGraph([c]);
     const output = archGraphToMermaid(graph);
-    expect(output).toContain('[Compute] Fn');
+    expect(output).toMatch(/subgraph Compute/);
+    expect(output).toContain('Stack_Fn["Fn"]');
   });
 
   // Test 4: edges
@@ -95,12 +96,15 @@ describe('archGraphToMermaid', () => {
     expect(edgeIdx).toBeGreaterThan(lastNodeIdx);
   });
 
-  // Test 9: group renders as label annotation, not subgraph
-  it('synthetic group renders as label annotation, not as a subgraph block', () => {
-    const c = container('Fn', 'Fn', undefined, 'Compute');
-    const graph = makeGraph([c]);
+  // Test 9: two groups render as separate subgraph blocks
+  it('two groups render as separate subgraph blocks', () => {
+    const a = container('A', 'FnA', undefined, 'GroupA');
+    const b = container('B', 'FnB', undefined, 'GroupB');
+    const graph = makeGraph([a, b]);
     const output = archGraphToMermaid(graph);
-    expect(output).not.toMatch(/subgraph Compute/);
-    expect(output).toContain('[Compute] Fn');
+    expect(output).toMatch(/subgraph GroupA/);
+    expect(output).toMatch(/subgraph GroupB/);
+    expect(output).toContain('A["FnA"]');
+    expect(output).toContain('B["FnB"]');
   });
 });

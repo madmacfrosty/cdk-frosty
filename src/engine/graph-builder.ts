@@ -1,14 +1,11 @@
-import { CdkTree } from '../parser/types';
-import { RuleOutput, RuleOutputMap } from '../engine/types';
-import { ArchContainer, ArchEdge, ArchGraph } from './types';
+import { RuleOutput, RuleOutputMap, ArchContainer, ArchEdge, ArchGraph } from './types';
 
-export function buildGraph(outputMap: RuleOutputMap, _tree: CdkTree): ArchGraph {
+export function buildGraph(outputMap: RuleOutputMap): ArchGraph {
   const containers = new Map<string, ArchContainer>();
-  const edges: ArchEdge[] = [];
+  const archEdges: ArchEdge[] = [];
 
-  // Collect group primaries: { memberFqn, groupLabel } in evaluation order
-  type GroupEntry = { memberFqn: string; groupLabel: string };
-  const groupEntries: GroupEntry[] = [];
+  // Collect group assignments keyed by the cdkPath of the node that produced the group output
+  const groupEntriesClean: Array<{ cdkPath: string; groupLabel: string }> = [];
 
   // --- Pass 1: Build containers and collect group outputs ---
   for (const [cdkPath, entry] of outputMap) {
@@ -30,23 +27,10 @@ export function buildGraph(outputMap: RuleOutputMap, _tree: CdkTree): ArchGraph 
       containers.set(cdkPath, container);
     }
 
-    // Group outputs can appear as primary or in metadata
     const all: RuleOutput[] = [primary, ...metadata];
     for (const output of all) {
       if (output && output.kind === 'group') {
-        groupEntries.push({ memberFqn: output.groupLabel, groupLabel: output.groupLabel });
-        // Note: memberFqn is the fqn to match; we store it separately below
-      }
-    }
-  }
-
-  // Re-collect groups properly: memberFqn from the output, not groupLabel
-  const groupEntriesClean: Array<{ memberFqn: string; groupLabel: string }> = [];
-  for (const [, entry] of outputMap) {
-    const all: RuleOutput[] = [entry.primary, ...entry.metadata];
-    for (const output of all) {
-      if (output && output.kind === 'group') {
-        groupEntriesClean.push({ memberFqn: output.memberFqn, groupLabel: output.groupLabel });
+        groupEntriesClean.push({ cdkPath, groupLabel: output.groupLabel });
       }
     }
   }
@@ -68,16 +52,8 @@ export function buildGraph(outputMap: RuleOutputMap, _tree: CdkTree): ArchGraph 
   }
 
   // --- Pass 3: Assign groups ---
-  // For each container, find matching group entries by comparing
-  // the container's sourceFqn (from outputMap) against group's memberFqn.
-  // First match wins (evaluation order reflects rule priority via the evaluator).
   for (const [cdkPath, container] of containers) {
-    const entry = outputMap.get(cdkPath);
-    if (!entry) continue;
-    const { sourceFqn } = entry;
-
-    // Find first group entry whose memberFqn matches this container's fqn
-    const match = groupEntriesClean.find(g => g.memberFqn === sourceFqn);
+    const match = groupEntriesClean.find(g => g.cdkPath === cdkPath);
     if (match) {
       container.groupId = match.groupLabel;
       container.groupLabel = match.groupLabel;
@@ -88,43 +64,43 @@ export function buildGraph(outputMap: RuleOutputMap, _tree: CdkTree): ArchGraph 
   const edgeIdCount = new Map<string, number>();
 
   for (const [, entry] of outputMap) {
-    const { primary, metadata } = entry;
+    const { edges, metadata } = entry;
 
-    if (primary && primary.kind === 'edge') {
-      const baseId = `${primary.sourceId}--${primary.targetId}`;
+    for (const item of edges) {
+      const baseId = `${item.sourceId}--${item.targetId}`;
       const count = edgeIdCount.get(baseId) ?? 0;
       const edgeId = count === 0 ? baseId : `${baseId}--${count + 1}`;
       edgeIdCount.set(baseId, count + 1);
 
       const edge: ArchEdge = {
         id: edgeId,
-        sourceId: primary.sourceId,
-        targetId: primary.targetId,
-        label: primary.label,
+        sourceId: item.sourceId,
+        targetId: item.targetId,
+        label: item.label,
         metadata: {},
       };
 
       for (const m of metadata) {
         if (m && m.kind === 'metadata' &&
-            m.targetEdgeSourceId === primary.sourceId &&
-            m.targetEdgeTargetId === primary.targetId) {
+            m.targetEdgeSourceId === item.sourceId &&
+            m.targetEdgeTargetId === item.targetId) {
           edge.metadata[m.key] = m.value;
         }
       }
 
-      edges.push(edge);
+      archEdges.push(edge);
     }
   }
 
   // --- Pass 5: Validate orphaned metadata ---
   for (const [, entry] of outputMap) {
-    const { primary, metadata } = entry;
-    if (primary && primary.kind === 'edge') continue;
+    const { edges: entryEdges, metadata } = entry;
+    if (entryEdges.length > 0) continue;
 
     for (const m of metadata) {
       if (m && m.kind === 'metadata') {
         const baseId = `${m.targetEdgeSourceId}--${m.targetEdgeTargetId}`;
-        const exists = edges.some(e => e.id === baseId || e.id.startsWith(baseId + '--'));
+        const exists = archEdges.some(e => e.id === baseId || e.id.startsWith(baseId + '--'));
         if (!exists) {
           process.stderr.write(
             `Warning: rule produced metadata targeting edge ${m.targetEdgeSourceId} --> ${m.targetEdgeTargetId}, but that edge does not exist\n`
@@ -140,5 +116,5 @@ export function buildGraph(outputMap: RuleOutputMap, _tree: CdkTree): ArchGraph 
     if (!container.parentId) roots.push(id);
   }
 
-  return { containers, edges, roots };
+  return { containers, edges: archEdges, roots };
 }

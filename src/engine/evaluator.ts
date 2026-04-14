@@ -4,7 +4,6 @@ import { Rule, RuleContext, RuleOutput } from './types';
 export function evaluateNode(
   node: CdkNode,
   rules: Rule[],
-  pass: 1 | 2,
   matchCache: Map<string, boolean>,
   context: RuleContext
 ): { primary: RuleOutput; metadata: RuleOutput[] } {
@@ -14,15 +13,8 @@ export function evaluateNode(
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
     const cacheKey = `${rule.id}::${node.path}`;
-
-    let matched: boolean;
-    if (pass === 1) {
-      matched = rule.match(node);
-      matchCache.set(cacheKey, matched);
-    } else {
-      matched = matchCache.get(cacheKey) ?? false;
-    }
-
+    const matched = rule.match(node);
+    matchCache.set(cacheKey, matched);
     if (matched) {
       matching.push({ rule, index: i });
     }
@@ -40,9 +32,7 @@ export function evaluateNode(
       : a.index - b.index
   );
 
-  // Determine expected kinds for this pass
-  const pass1Kinds = new Set(['container', 'group']);
-  const pass2Kinds = new Set(['edge', 'metadata']);
+  const primaryKinds = new Set(['container', 'group']);
 
   // Try each rule in order until we get a valid primary
   let primaryResult: RuleOutput = null;
@@ -65,12 +55,8 @@ export function evaluateNode(
       return { primary: null, metadata: [] };
     }
 
-    // Check pass filter
-    const kind = result.kind;
-    const validForPass = pass === 1 ? pass1Kinds.has(kind) : pass2Kinds.has(kind);
-    if (!validForPass) {
-      // Wrong pass — treat as no primary for this pass
-      return { primary: null, metadata: [] };
+    if (!primaryKinds.has(result.kind)) {
+      continue;
     }
 
     primaryResult = result;
@@ -98,7 +84,7 @@ export function evaluateNode(
 
     if (result === null) continue;
 
-    if (result.kind === 'metadata') {
+    if (result.kind === 'metadata' || result.kind === 'group') {
       metadata.push(result);
     } else {
       process.stderr.write(

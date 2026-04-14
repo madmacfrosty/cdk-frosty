@@ -1,4 +1,4 @@
-import { transform } from './index';
+import { execute } from './index';
 import { CdkNode, CdkTree } from '../parser/types';
 import { Rule, RuleContext } from './types';
 
@@ -19,9 +19,9 @@ function containerRule(id: string, matchFqn: string, priority = 10): Rule {
   };
 }
 
-describe('transform', () => {
-  // Test 1: all nodes in 5-node tree appear in RuleOutputMap
-  it('all nodes in a 5-node tree appear in the returned map', () => {
+describe('execute', () => {
+  // Test 1: all nodes in 5-node tree are visited (become containers)
+  it('all nodes in a 5-node tree appear as containers', () => {
     const root = makeNode('App', 'App', 'aws-cdk-lib.App', [
       makeNode('Stack', 'Stack', 'aws-cdk-lib.Stack', [
         makeNode('Fn', 'Stack/Fn', 'lambda'),
@@ -29,12 +29,12 @@ describe('transform', () => {
         makeNode('Role', 'Stack/Role', 'iam'),
       ]),
     ]);
-    const rule: Rule = { id: 'catch-all', priority: 1, match: () => true, apply: () => null };
-    const map = transform(makeTree(root), [rule]);
-    expect(map.size).toBe(5);
-    expect(map.has('App')).toBe(true);
-    expect(map.has('Stack')).toBe(true);
-    expect(map.has('Stack/Fn')).toBe(true);
+    const rule: Rule = { id: 'catch-all', priority: 1, match: () => true, apply: (n) => ({ kind: 'container', label: n.id, containerType: 'test' }) };
+    const graph = execute(makeTree(root), [rule]);
+    expect(graph.containers.size).toBe(5);
+    expect(graph.containers.has('App')).toBe(true);
+    expect(graph.containers.has('Stack')).toBe(true);
+    expect(graph.containers.has('Stack/Fn')).toBe(true);
   });
 
   // Test 2: Pass-1 context.findContainer always returns undefined
@@ -59,10 +59,12 @@ describe('transform', () => {
     ]);
     // Make Fn a container so it exists in Pass-2
     const lambdaRule = containerRule('lambda', 'lambda');
-    transform(makeTree(root), [lambdaRule, spyRule]);
-    // In pass 1, the spy was invoked; results should all be undefined
-    // (pass 1 context returns undefined for all findContainer calls)
-    expect(results.every(r => r === undefined)).toBe(true);
+    execute(makeTree(root), [lambdaRule, spyRule]);
+    // In pass 1, the spy was invoked during demotion; those results are undefined.
+    // The spy is also called in pass 2 where findContainer resolves.
+    // Verify the first two entries (pass 1) are undefined.
+    expect(results[0]).toBeUndefined();
+    expect(results[1]).toBeUndefined();
   });
 
   // Test 3: Pass-2 exact match
@@ -84,7 +86,7 @@ describe('transform', () => {
         makeNode('ESM', 'Stack/ESM', 'esm'),
       ]),
     ]);
-    transform(makeTree(root), [lambdaRule, edgeRule]);
+    execute(makeTree(root), [lambdaRule, edgeRule]);
     expect(resolvedContainer).toBeDefined();
     expect(resolvedContainer!.id).toBe('Stack/Fn');
   });
@@ -109,7 +111,7 @@ describe('transform', () => {
       ]),
     ]);
     const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    transform(makeTree(root), [lambdaRule, edgeRule]);
+    execute(makeTree(root), [lambdaRule, edgeRule]);
     const warnings = (spy.mock.calls as string[][]).flat().join('');
     spy.mockRestore();
     expect(resolvedContainer).toBeDefined();
@@ -140,7 +142,7 @@ describe('transform', () => {
       ]),
     ]);
     const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    transform(makeTree(root), [bucketRule, edgeRule]);
+    execute(makeTree(root), [bucketRule, edgeRule]);
     const warnings = (spy.mock.calls as string[][]).flat().join('');
     spy.mockRestore();
     expect(warnings).toContain('matched multiple');
@@ -160,7 +162,7 @@ describe('transform', () => {
     const root = makeNode('App', 'App', 'x', [
       makeNode('Stack', 'Stack', 'x'),
     ]);
-    transform(makeTree(root), [spyRule]);
+    execute(makeTree(root), [spyRule]);
     // 2 nodes × 1 rule = 2 match calls (once per node, cached in Pass 2)
     expect(callCount).toBe(2);
   });
@@ -184,8 +186,123 @@ describe('transform', () => {
         makeNode('ESM', 'Stack/ESM', 'esm'),
       ]),
     ]);
-    transform(makeTree(root), [lambdaRule, edgeRule]);
+    execute(makeTree(root), [lambdaRule, edgeRule]);
     expect(resolvedInPass2).toBeDefined();
     expect(resolvedInPass2!.id).toBe('Stack/Fn');
+  });
+
+  // Test 8: Pass-2 findNode suffix match
+  it('Pass-2 findNode suffix match: returns node by path fragment', () => {
+    let found: ReturnType<RuleContext['findNode']> = undefined;
+    const probe: Rule = {
+      id: 'probe',
+      priority: 5,
+      match: (n) => n.fqn === 'probe',
+      apply(_, context) { found = context.findNode('Fn'); return null; },
+    };
+    const lambdaRule = containerRule('lambda', 'lambda', 10);
+    const root = makeNode('App', 'App', 'x', [
+      makeNode('Stack', 'Stack', 'x', [
+        makeNode('Fn', 'Stack/Fn', 'lambda'),
+        makeNode('Probe', 'Stack/Probe', 'probe'),
+      ]),
+    ]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    execute(makeTree(root), [lambdaRule, probe]);
+    spy.mockRestore();
+    expect(found).toBeDefined();
+    expect(found!.path).toBe('Stack/Fn');
+  });
+
+  // Test 9: Pass-2 findNode with no match returns undefined
+  it('Pass-2 findNode with no match: returns undefined', () => {
+    let found: ReturnType<RuleContext['findNode']> = undefined;
+    const probe: Rule = {
+      id: 'probe',
+      priority: 5,
+      match: (n) => n.fqn === 'probe',
+      apply(_, context) { found = context.findNode('NonExistent'); return null; },
+    };
+    const root = makeNode('App', 'App', 'x', [makeNode('Probe', 'Stack/Probe', 'probe')]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    execute(makeTree(root), [probe]);
+    spy.mockRestore();
+    expect(found).toBeUndefined();
+  });
+
+  // Test 10: Pass-2 rule throwing — warning emitted; other rules still produce edges
+  it('Pass-2 rule throwing: warning emitted; other matched rules still run', () => {
+    const thrower: Rule = {
+      id: 'thrower',
+      priority: 10,
+      match: (n) => n.fqn === 'target',
+      apply() { throw new Error('pass2 boom'); },
+    };
+    const edgeRule: Rule = {
+      id: 'edge',
+      priority: 5,
+      match: (n) => n.fqn === 'target',
+      apply() { return { kind: 'edge', sourceId: 'src', targetId: 'tgt' } as const; },
+    };
+    const root = makeNode('App', 'App', 'x', [makeNode('Target', 'Stack/Target', 'target')]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const graph = execute(makeTree(root), [thrower, edgeRule]);
+    const warnings = (spy.mock.calls as string[][]).flat().join('');
+    spy.mockRestore();
+    expect(warnings).toContain('thrower');
+    expect(graph.edges).toHaveLength(1);
+    expect(graph.edges[0].id).toBe('src--tgt');
+  });
+
+  // Test 11: Pass-2 rule throwing non-Error — String(err) branch
+  it('Pass-2 rule throwing non-Error: String() path used in warning', () => {
+    const thrower: Rule = {
+      id: 'thrower',
+      priority: 10,
+      match: (n) => n.fqn === 'target',
+      apply() { throw 'string throw'; },
+    };
+    const root = makeNode('App', 'App', 'x', [makeNode('Target', 'Stack/Target', 'target')]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    execute(makeTree(root), [thrower]);
+    const warnings = (spy.mock.calls as string[][]).flat().join('');
+    spy.mockRestore();
+    expect(warnings).toContain('thrower');
+  });
+
+  // Test 12: findContainer suffix returning undefined — no containers match fragment
+  it('Pass-2 findContainer with unmatched fragment: returns undefined', () => {
+    let resolved: ReturnType<RuleContext['findContainer']> = undefined;
+    const probe: Rule = {
+      id: 'probe',
+      priority: 5,
+      match: (n) => n.fqn === 'esm',
+      apply(_, context) { resolved = context.findContainer('NonExistent'); return null; },
+    };
+    const root = makeNode('App', 'App', 'x', [
+      makeNode('Stack', 'Stack', 'x', [makeNode('ESM', 'Stack/ESM', 'esm')]),
+    ]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    execute(makeTree(root), [probe]);
+    spy.mockRestore();
+    expect(resolved).toBeUndefined();
+  });
+
+  // Test 13: Priority-100 rule returning null in Pass 2 — short-circuits with break
+  it('Pass-2 priority-100 rule returning null: breaks loop; lower-priority rules do not run', () => {
+    let lowerRuleCalled = false;
+    const filter: Rule = { id: 'filter', priority: 100, match: () => true, apply: () => null };
+    const edgeRule: Rule = {
+      id: 'edge',
+      priority: 5,
+      match: (n) => n.fqn === 'target',
+      apply() { lowerRuleCalled = true; return { kind: 'edge', sourceId: 'a', targetId: 'b' }; },
+    };
+    const root = makeNode('App', 'App', 'x', [makeNode('Target', 'Stack/Target', 'target')]);
+    const spy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const graph = execute(makeTree(root), [filter, edgeRule]);
+    spy.mockRestore();
+    expect(lowerRuleCalled).toBe(false);
+    expect(graph.edges).toHaveLength(0);
   });
 });

@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
 import { parse } from './parser';
-import { loadRules } from './engine/registry';
-import { transform } from './engine';
-import { buildGraph } from './graph';
+import { loadRules } from './rules/registry';
+import { execute } from './engine';
 import { render } from './renderer';
 
 function stripAnsi(str: string): string {
@@ -21,8 +20,9 @@ function main(): void {
     .argument('<input>', 'Path to CDK tree.json file')
     .option('--output <path>', 'Output HTML file path')
     .option('--rules <path>', 'Additional rules file (repeatable)')
+    .option('--stack <pattern>', 'Only include stacks whose name contains this pattern (case-insensitive)')
     .on('option:rules', (value: string) => { rulesPaths.push(value); })
-    .action((input: string, options: { output?: string }) => {
+    .action((input: string, options: { output?: string; stack?: string }) => {
       const outputPath = options.output
         ? options.output
         : path.join(
@@ -32,9 +32,8 @@ function main(): void {
 
       try {
         const tree = parse(input);
-        const rules = loadRules(rulesPaths);
-        const outputMap = transform(tree, rules);
-        const graph = buildGraph(outputMap, tree);
+        const rules = loadRules(rulesPaths, options.stack);
+        const graph = execute(tree, rules);
         const html = render(graph);
         fs.writeFileSync(outputPath, html);
         process.stdout.write(`Architecture diagram written to: ${path.resolve(outputPath)}\n`);

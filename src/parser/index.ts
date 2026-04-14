@@ -10,7 +10,7 @@ function buildNode(raw: Record<string, unknown>, parentPath?: string): CdkNode |
     process.stderr.write(`Warning: skipping malformed node: missing field "id"\n`);
     return null;
   }
-  if (typeof raw['path'] !== 'string' || !raw['path']) {
+  if (typeof raw['path'] !== 'string') {
     process.stderr.write(`Warning: skipping malformed node: missing field "path"\n`);
     return null;
   }
