@@ -1,20 +1,10 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
+import { parseArnName } from '../utils';
 
 function findChild(node: CdkNode, id: string): CdkNode | undefined {
   return node.children.find(c => c.id === id);
 }
-
-export const agentcoreRuntimeRule: Rule = {
-  id: 'project/agentcore-runtime',
-  priority: 50,
-  match(node) {
-    return node.fqn === '@aws-cdk/aws-bedrock-agentcore-alpha.Runtime';
-  },
-  apply(node) {
-    return { kind: 'container', label: node.id, containerType: 'agentcore-runtime' };
-  },
-};
 
 export const lambdaAgentcoreEdgeRule: Rule = {
   id: 'project/lambda-agentcore-edge',
@@ -58,11 +48,22 @@ export const agentcoreRuntimeStateMachineEdgeRule: Rule = {
 
     const props = resource.attributes?.['aws:cdk:cloudformation:props'] as Record<string, unknown> | undefined;
     const envVars = props?.environmentVariables as Record<string, unknown> | undefined;
-    if (!envVars?.['LIFECYCLE_STATE_MACHINE_ARN']) return null;
+    const smArn = envVars?.['LIFECYCLE_STATE_MACHINE_ARN'];
+    if (typeof smArn !== 'string') return null;
+
+    const smName = parseArnName(smArn);
+    if (!smName) return null;
 
     const runtime = context.findContainer(node.path);
-    const sm = context.findContainer('LifecycleStateMachine');
-    if (!runtime || !sm) return null;
+    if (!runtime) return null;
+
+    const cfnSm = context.findNodeWhere(n =>
+      (n.attributes?.['aws:cdk:cloudformation:props'] as Record<string, unknown> | undefined)
+        ?.['stateMachineName'] === smName
+    );
+    if (!cfnSm?.parentPath) return null;
+    const sm = context.findContainer(cfnSm.parentPath);
+    if (!sm) return null;
 
     return { kind: 'edge', sourceId: runtime.id, targetId: sm.id, label: 'starts' };
   },

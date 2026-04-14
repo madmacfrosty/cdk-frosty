@@ -36,6 +36,7 @@ export type RuleOutput =
 export interface RuleContext {
   findContainer(pathOrFragment: string): ArchContainer | undefined;
   findNode(pathOrFragment: string): CdkNode | undefined;
+  findNodeWhere(predicate: (node: CdkNode) => boolean): CdkNode | undefined;
 }
 
 export interface Rule {

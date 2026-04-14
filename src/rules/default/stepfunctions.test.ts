@@ -2,7 +2,7 @@ import { stateMachineRule, stateMachineLambdaEdgeRule } from './stepfunctions';
 import { CdkNode } from '../../parser/types';
 import { ArchContainer, RuleContext } from '../../engine/types';
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeNode(fqn: string, path: string, attributes: Record<string, unknown> = {}): CdkNode {
   return { id: path.split('/').pop()!, path, fqn, children: [], attributes };
@@ -60,7 +60,7 @@ describe('stateMachineLambdaEdgeRule', () => {
       const node = makeNode('aws-cdk-lib.aws_stepfunctions.CfnStateMachine', 'Stack/SM/Resource', {
         'aws:cdk:cloudformation:props': { definitionString: '{}' },
       });
-      const ctx: RuleContext = { findContainer: (id) => id === 'Stack/SM' ? container('Stack/SM') : undefined, findNode: () => undefined };
+      const ctx: RuleContext = { findContainer: (id) => id === 'Stack/SM' ? container('Stack/SM') : undefined, findNode: () => undefined, findNodeWhere: () => undefined };
       expect(stateMachineLambdaEdgeRule.apply(node, ctx)).toBeNull();
     });
 
@@ -78,6 +78,7 @@ describe('stateMachineLambdaEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = stateMachineLambdaEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/SM', targetId: 'Stack/ProcessorFn', label: 'invokes' }] });
@@ -90,6 +91,7 @@ describe('stateMachineLambdaEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'Stack/SM' ? container('Stack/SM') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(stateMachineLambdaEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -106,6 +108,7 @@ describe('stateMachineLambdaEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = stateMachineLambdaEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(1);

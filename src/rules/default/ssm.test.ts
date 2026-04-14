@@ -32,7 +32,7 @@ function ssmResource(paramLogicalId: string): unknown {
   };
 }
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 describe('ssmParameterRule', () => {
   describe('match', () => {
@@ -89,6 +89,7 @@ describe('lambdaSsmEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'MyParam' ? container('Stack/MyParam') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaSsmEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/Fn', targetId: 'Stack/MyParam', label: 'writes' }] });
@@ -102,6 +103,7 @@ describe('lambdaSsmEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'MyParam' ? container('Stack/MyParam') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaSsmEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/Fn', targetId: 'Stack/MyParam' }] });
@@ -123,6 +125,7 @@ describe('lambdaSsmEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'MyParam' ? container('Stack/MyParam') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = lambdaSsmEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(1);

@@ -8,6 +8,8 @@ import { lambdaDynamoEdgeRule } from './lambda-dynamo-edge';
 import { apigwRestRule, apigwWebSocketRule } from './apigw';
 import { apigwRestEdgeRule, apigwWebSocketEdgeRule } from './apigw-edge';
 import { lambdaInvokeEdgeRule } from './lambda-invoke-edge';
+import { agentcoreRuntimeRule } from './agentcore-runtime';
+import { agentcoreGatewayRule } from './agentcore-gateway';
 import { stateMachineRule, stateMachineLambdaEdgeRule } from './stepfunctions';
 import { ssmParameterRule, lambdaSsmEdgeRule } from './ssm';
 import { secretsManagerRule } from './secrets-manager';
@@ -17,6 +19,7 @@ export const defaultRules: Rule[] = [
   dynamodbRule, lambdaDynamoEdgeRule,
   apigwRestRule, apigwWebSocketRule, apigwRestEdgeRule, apigwWebSocketEdgeRule,
   lambdaInvokeEdgeRule,
+  agentcoreRuntimeRule, agentcoreGatewayRule,
   stateMachineRule, stateMachineLambdaEdgeRule,
   ssmParameterRule, lambdaSsmEdgeRule,
   secretsManagerRule,

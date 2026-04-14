@@ -1,5 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleOutput } from '../../engine/types';
+import { stripCdkHash } from '../utils';
 
 export const eventSourceMappingRule: Rule = {
   id: 'default/event-source-mapping',
@@ -14,13 +15,13 @@ export const eventSourceMappingRule: Rule = {
     // Resolve Lambda from functionName: { Ref: "LambdaFnABCDEF12" }
     const fnRef = (props.functionName as Record<string, unknown> | undefined)?.['Ref'];
     if (typeof fnRef !== 'string') return null;
-    const lambda = context.findContainer(fnRef.replace(/[A-F0-9]{8}$/, ''));
+    const lambda = context.findContainer(stripCdkHash(fnRef));
     if (!lambda) return null;
 
     // Resolve event source from eventSourceArn: { Fn::GetAtt: ["QueueABCDEF12", "Arn"] }
     const getAtt = (props.eventSourceArn as Record<string, unknown> | undefined)?.['Fn::GetAtt'];
     if (!Array.isArray(getAtt) || typeof getAtt[0] !== 'string') return null;
-    const source = context.findContainer((getAtt[0] as string).replace(/[A-F0-9]{8}$/, ''));
+    const source = context.findContainer(stripCdkHash(getAtt[0] as string));
     if (!source) return null;
 
     return { kind: 'edge', sourceId: source.id, targetId: lambda.id, label: 'triggers' };

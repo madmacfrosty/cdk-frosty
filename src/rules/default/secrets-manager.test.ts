@@ -1,7 +1,7 @@
 import { secretsManagerRule } from './secrets-manager';
 import { CdkNode } from '../../parser/types';
 
-const noopContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeNode(fqn: string, id = 'MySecret'): CdkNode {
   return { id, path: 'Stack/MySecret', fqn, children: [], attributes: {} };

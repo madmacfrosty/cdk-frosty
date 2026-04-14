@@ -1,5 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
+import { stripCdkHash } from '../utils';
 
 export const stateMachineRule: Rule = {
   id: 'default/state-machine',
@@ -32,7 +33,7 @@ export const stateMachineLambdaEdgeRule: Rule = {
       if (!part || typeof part !== 'object') continue;
       const getAtt = (part as Record<string, unknown>)['Fn::GetAtt'];
       if (!Array.isArray(getAtt) || typeof getAtt[0] !== 'string') continue;
-      const constructId = (getAtt[0] as string).replace(/[A-F0-9]{8}$/, '');
+      const constructId = stripCdkHash(getAtt[0] as string);
       const target = context.findContainer(constructId);
       if (target && target.id !== sm.id) targetIds.add(target.id);
     }

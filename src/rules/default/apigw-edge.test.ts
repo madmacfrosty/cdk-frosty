@@ -46,7 +46,7 @@ function makeWebSocketNode(lambdaLogicalId: string): CdkNode {
   return makeNode('aws-cdk-lib.aws_apigatewayv2.WebSocketApi', 'Stack/WsApi', {}, [integration]);
 }
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 describe('apigwRestEdgeRule', () => {
   describe('match', () => {
@@ -82,6 +82,7 @@ describe('apigwRestEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'Stack/Fn' ? container('Stack/Fn') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(apigwRestEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -91,6 +92,7 @@ describe('apigwRestEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'Stack/Fn' ? container('Stack/Fn') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(apigwRestEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -104,6 +106,7 @@ describe('apigwRestEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = apigwRestEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({ kind: 'edge', sourceId: 'Stack/MyApi', targetId: 'Stack/Fn', label: 'invokes' });
@@ -135,6 +138,7 @@ describe('apigwWebSocketEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -144,6 +148,7 @@ describe('apigwWebSocketEdgeRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
     });
@@ -157,6 +162,7 @@ describe('apigwWebSocketEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = apigwWebSocketEdgeRule.apply(node, ctx);
       expect(result).toMatchObject({
@@ -180,6 +186,7 @@ describe('apigwWebSocketEdgeRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = apigwWebSocketEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
       expect(result.items).toHaveLength(1);

@@ -1,7 +1,7 @@
 import { iamRoleRule } from './iam-role';
 import { CdkNode } from '../../parser/types';
 
-const noopContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeNode(fqn: string): CdkNode {
   return { id: 'Role', path: 'Stack/Role', fqn, children: [], attributes: {} };

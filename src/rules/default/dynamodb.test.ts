@@ -1,7 +1,7 @@
 import { dynamodbRule } from './dynamodb';
 import { CdkNode } from '../../parser/types';
 
-const noopContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeNode(fqn: string, id = 'Table'): CdkNode {
   return { id, path: 'Stack/Table', fqn, children: [], attributes: {} };

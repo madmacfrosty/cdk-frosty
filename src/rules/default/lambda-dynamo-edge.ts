@@ -1,5 +1,6 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
+import { stripCdkHash } from '../utils';
 
 function findChild(node: CdkNode, id: string): CdkNode | undefined {
   return node.children.find(c => c.id === id);
@@ -36,7 +37,7 @@ function findDynamoTables(node: CdkNode, context: RuleContext): string[] {
     for (const res of resources) {
       for (const logicalId of extractGetAttLogicalIds(res)) {
         // CDK logical IDs end with an 8-char uppercase hex hash — strip it to get the construct ID
-        const constructId = logicalId.replace(/[A-F0-9]{8}$/, '');
+        const constructId = stripCdkHash(logicalId);
         const table = context.findContainer(constructId);
         if (table) tableIds.add(table.id);
       }

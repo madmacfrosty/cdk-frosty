@@ -1,7 +1,7 @@
 import { lambdaRule } from './lambda';
 import { CdkNode } from '../../parser/types';
 
-const noopContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeNode(fqn: string, id = 'Fn', path = 'Stack/Fn'): CdkNode {
   return { id, path, fqn, children: [], attributes: {} };

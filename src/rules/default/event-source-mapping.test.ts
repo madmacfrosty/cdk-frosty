@@ -18,7 +18,7 @@ function makeEsmNode(props: Record<string, unknown>): CdkNode {
   };
 }
 
-const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 describe('eventSourceMappingRule', () => {
   describe('match', () => {
@@ -68,6 +68,7 @@ describe('eventSourceMappingRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'LambdaFn' ? container('Stack/LambdaFn', 'lambda') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(eventSourceMappingRule.apply(node, ctx)).toBeNull();
     });
@@ -80,6 +81,7 @@ describe('eventSourceMappingRule', () => {
       const ctx: RuleContext = {
         findContainer: (id) => id === 'LambdaFn' ? container('Stack/LambdaFn', 'lambda') : undefined,
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       expect(eventSourceMappingRule.apply(node, ctx)).toBeNull();
     });
@@ -96,6 +98,7 @@ describe('eventSourceMappingRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = eventSourceMappingRule.apply(node, ctx);
       expect(result).toEqual({ kind: 'edge', sourceId: 'Stack/MyQueue', targetId: 'Stack/LambdaFn', label: 'triggers' });
@@ -113,6 +116,7 @@ describe('eventSourceMappingRule', () => {
           return undefined;
         },
         findNode: () => undefined,
+        findNodeWhere: () => undefined,
       };
       const result = eventSourceMappingRule.apply(node, ctx);
       expect(result).toEqual({ kind: 'edge', sourceId: 'Stack/MyTable', targetId: 'Stack/ProcessorFn', label: 'triggers' });
