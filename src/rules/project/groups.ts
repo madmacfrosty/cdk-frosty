@@ -1,7 +1,7 @@
 import { Rule, RuleOutput } from '../../engine/types';
 
 export const agentsGroupRule: Rule = {
-  id: 'default/agents-group',
+  id: 'project/agents-group',
   priority: 30,
   match(node) {
     return (
@@ -19,7 +19,7 @@ export const agentsGroupRule: Rule = {
 };
 
 export const canariesGroupRule: Rule = {
-  id: 'default/canaries-group',
+  id: 'project/canaries-group',
   priority: 30,
   match(node) {
     return (
