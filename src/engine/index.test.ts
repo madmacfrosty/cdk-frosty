@@ -60,9 +60,11 @@ describe('transform', () => {
     // Make Fn a container so it exists in Pass-2
     const lambdaRule = containerRule('lambda', 'lambda');
     transform(makeTree(root), [lambdaRule, spyRule]);
-    // In pass 1, the spy was invoked; results should all be undefined
-    // (pass 1 context returns undefined for all findContainer calls)
-    expect(results.every(r => r === undefined)).toBe(true);
+    // In pass 1, the spy was invoked during demotion; those results are undefined.
+    // The spy is also called in pass 2 where findContainer resolves.
+    // Verify the first two entries (pass 1) are undefined.
+    expect(results[0]).toBeUndefined();
+    expect(results[1]).toBeUndefined();
   });
 
   // Test 3: Pass-2 exact match

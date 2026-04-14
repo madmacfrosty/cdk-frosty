@@ -137,7 +137,7 @@ describe('CLI unit tests', () => {
   // Test 8: --rules flag twice — both paths passed to loadRules
   it('--rules flag twice: both paths passed to loadRules', () => {
     runCli(['/ok/tree.json', '--rules', '/rules/a.js', '--rules', '/rules/b.js']);
-    expect(mockLoadRules).toHaveBeenCalledWith(['/rules/a.js', '/rules/b.js']);
+    expect(mockLoadRules).toHaveBeenCalledWith(['/rules/a.js', '/rules/b.js'], undefined);
   });
 
   // Test 9: ANSI sequences stripped from error message

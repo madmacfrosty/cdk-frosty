@@ -4,12 +4,14 @@ import { ArchContainer } from '../graph/types';
 export type RuleOutput =
   | { kind: 'container'; label: string; containerType: string }
   | { kind: 'edge'; sourceId: string; targetId: string; label?: string }
+  | { kind: 'edges'; items: Array<{ sourceId: string; targetId: string; label?: string }> }
   | { kind: 'metadata'; targetEdgeSourceId: string; targetEdgeTargetId: string; key: string; value: unknown }
-  | { kind: 'group'; groupLabel: string; memberFqn: string }
+  | { kind: 'group'; groupLabel: string; memberFqn?: string }
   | null;
 
 export interface RuleContext {
   findContainer(pathOrFragment: string): ArchContainer | undefined;
+  findNode(pathOrFragment: string): CdkNode | undefined;
 }
 
 export interface Rule {
@@ -19,8 +21,11 @@ export interface Rule {
   apply(node: CdkNode, context: RuleContext): RuleOutput;
 }
 
+export type EdgeItem = { sourceId: string; targetId: string; label?: string };
+
 export type RuleOutputMap = Map<string, {
   primary: RuleOutput;
+  edges: EdgeItem[];
   metadata: RuleOutput[];
   sourceFqn: string;
 }>;

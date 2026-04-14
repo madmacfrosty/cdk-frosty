@@ -42,7 +42,7 @@ export function evaluateNode(
 
   // Determine expected kinds for this pass
   const pass1Kinds = new Set(['container', 'group']);
-  const pass2Kinds = new Set(['edge', 'metadata']);
+  const pass2Kinds = new Set(['edge', 'edges', 'metadata']);
 
   // Try each rule in order until we get a valid primary
   let primaryResult: RuleOutput = null;
@@ -69,8 +69,7 @@ export function evaluateNode(
     const kind = result.kind;
     const validForPass = pass === 1 ? pass1Kinds.has(kind) : pass2Kinds.has(kind);
     if (!validForPass) {
-      // Wrong pass — treat as no primary for this pass
-      return { primary: null, metadata: [] };
+      continue;
     }
 
     primaryResult = result;
@@ -98,7 +97,7 @@ export function evaluateNode(
 
     if (result === null) continue;
 
-    if (result.kind === 'metadata') {
+    if (result.kind === 'metadata' || result.kind === 'group') {
       metadata.push(result);
     } else {
       process.stderr.write(

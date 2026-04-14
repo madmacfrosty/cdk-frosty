@@ -2,7 +2,7 @@ import { evaluateNode } from './evaluator';
 import { CdkNode } from '../parser/types';
 import { Rule, RuleContext, RuleOutput } from './types';
 
-const noopContext: RuleContext = { findContainer: () => undefined };
+const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined };
 
 function makeNode(overrides: Partial<CdkNode> = {}): CdkNode {
   return { id: 'Fn', path: 'Stack/Fn', fqn: 'aws-cdk-lib.aws_lambda.Function', children: [], attributes: {}, ...overrides };

@@ -11,6 +11,7 @@ function containerMap(entries: Array<[string, string, string]>): RuleOutputMap {
   for (const [path, label, fqn] of entries) {
     map.set(path, {
       primary: { kind: 'container', label, containerType: 'test' },
+      edges: [],
       metadata: [],
       sourceFqn: fqn,
     });
@@ -52,18 +53,13 @@ describe('buildGraph', () => {
     expect(graph.containers.get('A')!.parentId).toBeUndefined();
   });
 
-  // Test 5: group assignment
-  it('group assignment: container with matching sourceFqn gets groupId and groupLabel', () => {
+  // Test 5: group assignment — group output on the same entry as the container (path-based)
+  it('group assignment: container gets groupId and groupLabel from group output in its own metadata', () => {
     const map: RuleOutputMap = new Map();
-    // A node that produces a group output for Lambda fqn
-    map.set('App/GroupNode', {
-      primary: { kind: 'group', groupLabel: 'Compute', memberFqn: 'aws-cdk-lib.aws_lambda.Function' },
-      metadata: [],
-      sourceFqn: 'special-construct',
-    });
     map.set('Stack/Fn', {
       primary: { kind: 'container', label: 'Fn', containerType: 'lambda' },
-      metadata: [],
+      edges: [],
+      metadata: [{ kind: 'group', groupLabel: 'Compute' }],
       sourceFqn: 'aws-cdk-lib.aws_lambda.Function',
     });
     const graph = buildGraph(map, makeTree());
@@ -72,22 +68,16 @@ describe('buildGraph', () => {
     expect(fn.groupId).toBe('Compute');
   });
 
-  // Test 6: two group rules match same container — higher-priority (first in eval order) wins
-  it('two group entries match same container: first (higher-priority) group used', () => {
+  // Test 6: two group outputs on same container — first one wins
+  it('two group outputs on same container: first group used', () => {
     const map: RuleOutputMap = new Map();
-    map.set('App/Group1', {
-      primary: { kind: 'group', groupLabel: 'HighPriorityGroup', memberFqn: 'aws-cdk-lib.aws_lambda.Function' },
-      metadata: [],
-      sourceFqn: 'construct1',
-    });
-    map.set('App/Group2', {
-      primary: { kind: 'group', groupLabel: 'LowPriorityGroup', memberFqn: 'aws-cdk-lib.aws_lambda.Function' },
-      metadata: [],
-      sourceFqn: 'construct2',
-    });
     map.set('Stack/Fn', {
       primary: { kind: 'container', label: 'Fn', containerType: 'lambda' },
-      metadata: [],
+      edges: [],
+      metadata: [
+        { kind: 'group', groupLabel: 'HighPriorityGroup' },
+        { kind: 'group', groupLabel: 'LowPriorityGroup' },
+      ],
       sourceFqn: 'aws-cdk-lib.aws_lambda.Function',
     });
     const graph = buildGraph(map, makeTree());
@@ -98,9 +88,9 @@ describe('buildGraph', () => {
   // Test 7: edge IDs — first, second, third between same pair
   it('edge IDs: --2 and --3 suffixes for duplicate pairs', () => {
     const map: RuleOutputMap = new Map();
-    map.set('n1', { primary: { kind: 'edge', sourceId: 'src', targetId: 'tgt' }, metadata: [], sourceFqn: 'x' });
-    map.set('n2', { primary: { kind: 'edge', sourceId: 'src', targetId: 'tgt' }, metadata: [], sourceFqn: 'x' });
-    map.set('n3', { primary: { kind: 'edge', sourceId: 'src', targetId: 'tgt' }, metadata: [], sourceFqn: 'x' });
+    map.set('n1', { primary: null, edges: [{ sourceId: 'src', targetId: 'tgt' }], metadata: [], sourceFqn: 'x' });
+    map.set('n2', { primary: null, edges: [{ sourceId: 'src', targetId: 'tgt' }], metadata: [], sourceFqn: 'x' });
+    map.set('n3', { primary: null, edges: [{ sourceId: 'src', targetId: 'tgt' }], metadata: [], sourceFqn: 'x' });
     const graph = buildGraph(map, makeTree());
     const ids = graph.edges.map(e => e.id);
     expect(ids).toContain('src--tgt');
@@ -112,7 +102,8 @@ describe('buildGraph', () => {
   it('metadata on valid edge: attached to edge.metadata[key]', () => {
     const map: RuleOutputMap = new Map();
     map.set('n1', {
-      primary: { kind: 'edge', sourceId: 'src', targetId: 'tgt' },
+      primary: null,
+      edges: [{ sourceId: 'src', targetId: 'tgt' }],
       metadata: [{ kind: 'metadata', targetEdgeSourceId: 'src', targetEdgeTargetId: 'tgt', key: 'role', value: 'arn:aws:iam::123' }],
       sourceFqn: 'x',
     });
@@ -125,6 +116,7 @@ describe('buildGraph', () => {
     const map: RuleOutputMap = new Map();
     map.set('n1', {
       primary: null,
+      edges: [],
       metadata: [{ kind: 'metadata', targetEdgeSourceId: 'ghost-src', targetEdgeTargetId: 'ghost-tgt', key: 'k', value: 'v' }],
       sourceFqn: 'x',
     });

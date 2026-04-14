@@ -1,6 +1,6 @@
 import { CdkNode, CdkTree } from '../parser/types';
 import { ArchContainer } from '../graph/types';
-import { Rule, RuleContext, RuleOutputMap } from './types';
+import { Rule, RuleContext, RuleOutput, RuleOutputMap, EdgeItem } from './types';
 import { evaluateNode } from './evaluator';
 
 function flattenTree(node: CdkNode): CdkNode[] {
@@ -16,9 +16,10 @@ export function transform(tree: CdkTree, rules: Rule[]): RuleOutputMap {
   const matchCache = new Map<string, boolean>();
   const outputMap: RuleOutputMap = new Map();
 
-  // Pass-1 context: findContainer always returns undefined
+  // Pass-1 context: findContainer/findNode always return undefined
   const pass1Context: RuleContext = {
     findContainer() { return undefined; },
+    findNode() { return undefined; },
   };
 
   // Partial container map for Pass-2 lookup (built from Pass-1 results)
@@ -28,7 +29,7 @@ export function transform(tree: CdkTree, rules: Rule[]): RuleOutputMap {
   for (const node of nodes) {
     const result = evaluateNode(node, rules, 1, matchCache, pass1Context);
     // Store pass-1 result temporarily keyed by path
-    outputMap.set(node.path, { primary: result.primary, metadata: result.metadata, sourceFqn: node.fqn });
+    outputMap.set(node.path, { primary: result.primary, edges: [], metadata: result.metadata, sourceFqn: node.fqn });
 
     if (result.primary && result.primary.kind === 'container') {
       containerMap.set(node.path, {
@@ -41,8 +42,23 @@ export function transform(tree: CdkTree, rules: Rule[]): RuleOutputMap {
     }
   }
 
+  // Node map for pass-2 findNode
+  const nodeMap = new Map<string, CdkNode>();
+  for (const node of nodes) nodeMap.set(node.path, node);
+
   // Pass-2 context: resolve by exact match then suffix
   const pass2Context: RuleContext = {
+    findNode(pathOrFragment: string): CdkNode | undefined {
+      const exact = nodeMap.get(pathOrFragment);
+      if (exact) return exact;
+      const matches: CdkNode[] = [];
+      for (const [key, node] of nodeMap) {
+        if (key === pathOrFragment || key.endsWith('/' + pathOrFragment)) matches.push(node);
+      }
+      if (matches.length === 0) return undefined;
+      matches.sort((a, b) => a.path.length - b.path.length);
+      return matches[0];
+    },
     findContainer(pathOrFragment: string): ArchContainer | undefined {
       // Exact match first
       const exact = containerMap.get(pathOrFragment);
@@ -69,22 +85,44 @@ export function transform(tree: CdkTree, rules: Rule[]): RuleOutputMap {
     },
   };
 
-  // Pass 2: update outputMap with pass-2 results (edges/metadata)
+  // Pass 2: collect edges from ALL matched rules, highest priority first so null-returning
+  // rules (e.g. stack filter) can short-circuit before edge rules fire
+  const rulesByPriority = [...rules]
+    .map((rule, index) => ({ rule, index }))
+    .sort((a, b) => b.rule.priority !== a.rule.priority
+      ? b.rule.priority - a.rule.priority
+      : a.index - b.index);
+
   for (const node of nodes) {
-    const result = evaluateNode(node, rules, 2, matchCache, pass2Context);
-    // Merge: keep pass-1 primary if pass-2 produces null; keep pass-2 primary if it produces edge/metadata
-    const existing = outputMap.get(node.path)!;
-    if (result.primary !== null) {
-      outputMap.set(node.path, { primary: result.primary, metadata: result.metadata, sourceFqn: node.fqn });
-    } else {
-      // Pass 2 produced nothing — keep pass-1 result (container/group)
-      // but also merge any pass-2 metadata
-      outputMap.set(node.path, {
-        primary: existing.primary,
-        metadata: [...existing.metadata, ...result.metadata],
-        sourceFqn: node.fqn,
-      });
+    const newEdges: EdgeItem[] = [];
+    const newMetadata: RuleOutput[] = [];
+
+    for (const { rule } of rulesByPriority) {
+      const cacheKey = `${rule.id}::${node.path}`;
+      if (!matchCache.get(cacheKey)) continue;
+
+      let result: RuleOutput;
+      try {
+        result = rule.apply(node, pass2Context);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`Warning: rule "${rule.id}" threw on node "${node.path}": ${msg}\n`);
+        continue;
+      }
+
+      if (result === null) { if (rule.priority >= 100) break; continue; }
+      if (result.kind === 'edge') newEdges.push(result);
+      else if (result.kind === 'edges') newEdges.push(...result.items);
+      else if (result.kind === 'metadata') newMetadata.push(result);
     }
+
+    const existing = outputMap.get(node.path)!;
+    outputMap.set(node.path, {
+      primary: existing.primary,
+      edges: [...existing.edges, ...newEdges],
+      metadata: [...existing.metadata, ...newMetadata],
+      sourceFqn: node.fqn,
+    });
   }
 
   return outputMap;

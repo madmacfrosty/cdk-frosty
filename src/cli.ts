@@ -21,8 +21,9 @@ function main(): void {
     .argument('<input>', 'Path to CDK tree.json file')
     .option('--output <path>', 'Output HTML file path')
     .option('--rules <path>', 'Additional rules file (repeatable)')
+    .option('--stack <pattern>', 'Only include stacks whose name contains this pattern (case-insensitive)')
     .on('option:rules', (value: string) => { rulesPaths.push(value); })
-    .action((input: string, options: { output?: string }) => {
+    .action((input: string, options: { output?: string; stack?: string }) => {
       const outputPath = options.output
         ? options.output
         : path.join(
@@ -32,7 +33,7 @@ function main(): void {
 
       try {
         const tree = parse(input);
-        const rules = loadRules(rulesPaths);
+        const rules = loadRules(rulesPaths, options.stack);
         const outputMap = transform(tree, rules);
         const graph = buildGraph(outputMap, tree);
         const html = render(graph);

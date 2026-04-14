@@ -18,11 +18,7 @@ function escapeLabel(label: string): string {
 }
 
 function buildLabel(container: ArchContainer): string {
-  const base = escapeLabel(container.label);
-  if (container.groupLabel) {
-    return `[${escapeLabel(container.groupLabel)}] ${base}`;
-  }
-  return base;
+  return escapeLabel(container.label);
 }
 
 function renderContainers(
@@ -68,11 +64,32 @@ function renderEdge(edge: ArchEdge): string {
 export function archGraphToMermaid(graph: ArchGraph): string {
   const lines: string[] = ['flowchart TD'];
 
-  // Render root containers (and their subtrees)
-  const rootContents = renderContainers(graph.roots, graph.containers, '  ');
-  if (rootContents) {
-    lines.push(rootContents);
+  // Collect groups and their root members
+  const groups = new Map<string, { label: string; rootIds: string[] }>();
+  for (const rootId of graph.roots) {
+    const container = graph.containers.get(rootId);
+    if (!container?.groupId) continue;
+    let group = groups.get(container.groupId);
+    if (!group) {
+      group = { label: container.groupLabel ?? container.groupId, rootIds: [] };
+      groups.set(container.groupId, group);
+    }
+    group.rootIds.push(rootId);
   }
+
+  const groupedRootIds = new Set([...groups.values()].flatMap(g => g.rootIds));
+
+  // Render group subgraphs
+  for (const [groupId, group] of groups) {
+    lines.push(`  subgraph ${sanitizeId(groupId)} ["${escapeLabel(group.label)}"]`);
+    lines.push(renderContainers(group.rootIds, graph.containers, '    '));
+    lines.push(`  end`);
+  }
+
+  // Render ungrouped root containers
+  const ungroupedRoots = graph.roots.filter(id => !groupedRootIds.has(id));
+  const rootContents = renderContainers(ungroupedRoots, graph.containers, '  ');
+  if (rootContents) lines.push(rootContents);
 
   // Render edges after all nodes/subgraphs
   for (const edge of graph.edges) {
