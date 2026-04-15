@@ -109,6 +109,43 @@ describe('lambdaSsmEdgeRule', () => {
       expect(result).toMatchObject({ kind: 'edges', items: [{ sourceId: 'Stack/Fn', targetId: 'Stack/MyParam' }] });
     });
 
+    it('handles Resource as an array', () => {
+      const node = makeLambdaNode([{
+        Action: 'ssm:GetParameter',
+        Resource: [ssmResource('MyParamABCDEF12')],
+      }]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'MyParam' ? container('Stack/MyParam') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      const result = lambdaSsmEdgeRule.apply(node, ctx);
+      expect(result).toMatchObject({ kind: 'edges', items: [{ targetId: 'Stack/MyParam' }] });
+    });
+
+    it('skips resources that are not objects', () => {
+      const node = makeLambdaNode([{
+        Action: 'ssm:GetParameter',
+        Resource: 'arn:aws:ssm:us-east-1:123:parameter/MyParam',
+      }]);
+      expect(lambdaSsmEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
+    it('skips resources that are objects without Fn::Join', () => {
+      const node = makeLambdaNode([{
+        Action: 'ssm:GetParameter',
+        Resource: { 'Fn::GetAtt': ['MyParamABCDEF12', 'Arn'] },
+      }]);
+      expect(lambdaSsmEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
+    it('skips Fn::Join parts that have no Ref key', () => {
+      const node = makeLambdaNode([{
+        Action: 'ssm:GetParameter',
+        Resource: { 'Fn::Join': ['', [{ 'Fn::GetAtt': ['MyParamABCDEF12', 'Arn'] }]] },
+      }]);
+      expect(lambdaSsmEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
     it('returns null when parameter container not found', () => {
       const node = makeLambdaNode([{
         Action: 'ssm:PutParameter',

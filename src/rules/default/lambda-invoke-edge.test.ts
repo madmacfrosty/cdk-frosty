@@ -121,6 +121,22 @@ describe('lambdaInvokeEdgeRule', () => {
       });
     });
 
+    it('skips resources that are not objects', () => {
+      const node = makeLambdaNode('Stack/Fn', [{
+        Action: 'lambda:InvokeFunction',
+        Resource: 'arn:aws:lambda:us-east-1:123:function:TargetFn',
+      }]);
+      expect(lambdaInvokeEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
+    it('skips Fn::ImportValue with no colon separator', () => {
+      const node = makeLambdaNode('Stack/Fn', [{
+        Action: 'lambda:InvokeFunction',
+        Resource: { 'Fn::ImportValue': 'ExportsOutputRefMyAliasABCDEF12ABCDEF12' },
+      }]);
+      expect(lambdaInvokeEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
     it('deduplicates multiple invoke statements targeting the same lambda', () => {
       const node = makeLambdaNode('Stack/Fn', [
         { Action: 'lambda:InvokeFunction', Resource: { 'Fn::GetAtt': ['TargetFnABCDEF12', 'Arn'] } },

@@ -42,6 +42,45 @@ describe('lambdaDynamoEdgeRule', () => {
       expect(lambdaDynamoEdgeRule.apply(node, noopContext)).toBeNull();
     });
 
+    it('returns edge for cross-stack table via Fn::ImportValue', () => {
+      const node = makeLambdaNode([{
+        Action: 'dynamodb:GetItem',
+        Resource: { 'Fn::ImportValue': 'OtherStack:ExportsOutputFnGetAttMyTableABCDEF12Arn34567890' },
+      }]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'OtherStack/MyTable' ? container('OtherStack/MyTable') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      expect(lambdaDynamoEdgeRule.apply(node, ctx)).toMatchObject({
+        kind: 'edges',
+        items: [{ sourceId: 'Stack/Fn', targetId: 'OtherStack/MyTable', label: 'reads/writes' }],
+      });
+    });
+
+    it('deduplicates table ARN and index ARN pointing to the same cross-stack table', () => {
+      const node = makeLambdaNode([{
+        Action: 'dynamodb:Query',
+        Resource: [
+          { 'Fn::ImportValue': 'OtherStack:ExportsOutputFnGetAttMyTableABCDEF12Arn34567890' },
+          { 'Fn::Join': ['', [{ 'Fn::ImportValue': 'OtherStack:ExportsOutputFnGetAttMyTableABCDEF12Arn34567890' }, '/index/MyIndex']] },
+        ],
+      }]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'OtherStack/MyTable' ? container('OtherStack/MyTable') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      const result = lambdaDynamoEdgeRule.apply(node, ctx) as { kind: 'edges'; items: unknown[] };
+      expect(result.items).toHaveLength(1);
+    });
+
+    it('skips resources that are not objects', () => {
+      const node = makeLambdaNode([{
+        Action: 'dynamodb:GetItem',
+        Resource: 'arn:aws:dynamodb:us-east-1:123:table/MyTable',
+      }]);
+      expect(lambdaDynamoEdgeRule.apply(node, noopContext)).toBeNull();
+    });
+
     it('returns null when no dynamodb: actions in policy', () => {
       const node = makeLambdaNode([{
         Action: 's3:GetObject',

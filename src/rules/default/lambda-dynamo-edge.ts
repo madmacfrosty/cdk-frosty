@@ -1,9 +1,23 @@
 import { CdkNode } from '../../parser/types';
 import { Rule, RuleContext, RuleOutput } from '../../engine/types';
-import { stripCdkHash } from '../utils';
+import { stripCdkHash, parseCrossStackRef } from '../utils';
 
 function findChild(node: CdkNode, id: string): CdkNode | undefined {
   return node.children.find(c => c.id === id);
+}
+
+function extractImportValue(resource: unknown): string | undefined {
+  if (!resource || typeof resource !== 'object') return undefined;
+  const r = resource as Record<string, unknown>;
+  if (typeof r['Fn::ImportValue'] === 'string') return r['Fn::ImportValue'];
+  const join = r['Fn::Join'];
+  if (Array.isArray(join) && Array.isArray(join[1])) {
+    for (const part of join[1] as unknown[]) {
+      const nested = extractImportValue(part);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
 }
 
 function extractGetAttLogicalIds(resource: unknown): string[] {
@@ -36,10 +50,17 @@ function findDynamoTables(node: CdkNode, context: RuleContext): string[] {
     const resources = Array.isArray(s['Resource']) ? s['Resource'] : [s['Resource']];
     for (const res of resources) {
       for (const logicalId of extractGetAttLogicalIds(res)) {
-        // CDK logical IDs end with an 8-char uppercase hex hash — strip it to get the construct ID
         const constructId = stripCdkHash(logicalId);
         const table = context.findContainer(constructId);
         if (table) tableIds.add(table.id);
+      }
+      const importValue = extractImportValue(res);
+      if (importValue) {
+        const ref = parseCrossStackRef(importValue);
+        if (ref) {
+          const table = context.findContainer(ref.stackName + '/' + ref.constructId);
+          if (table) tableIds.add(table.id);
+        }
       }
     }
   }

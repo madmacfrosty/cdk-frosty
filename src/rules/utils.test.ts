@@ -1,4 +1,4 @@
-import { stripCdkHash, parseArnName } from './utils';
+import { stripCdkHash, parseArnName, parseCrossStackRef } from './utils';
 
 describe('stripCdkHash', () => {
   it('strips an 8-char uppercase hex suffix', () => {
@@ -29,5 +29,29 @@ describe('parseArnName', () => {
 
   it('returns the whole string when there is no colon', () => {
     expect(parseArnName('MyStateMachine')).toBe('MyStateMachine');
+  });
+});
+
+describe('parseCrossStackRef', () => {
+  it('parses an ExportsOutputRef import value', () => {
+    expect(parseCrossStackRef('InfraStack:ExportsOutputRefAgentCoreRuntimeABCDEF1234567890')).toEqual({
+      stackName: 'InfraStack',
+      constructId: 'AgentCoreRuntime',
+    });
+  });
+
+  it('parses an ExportsOutputFnGetAtt import value', () => {
+    expect(parseCrossStackRef('InfraStack:ExportsOutputFnGetAttMyBucketABCDEF12Arn34567890')).toEqual({
+      stackName: 'InfraStack',
+      constructId: 'MyBucket',
+    });
+  });
+
+  it('returns undefined when there is no colon separator', () => {
+    expect(parseCrossStackRef('NoColonHere')).toBeUndefined();
+  });
+
+  it('returns undefined when the export name does not match known patterns', () => {
+    expect(parseCrossStackRef('InfraStack:SomeRandomExportName')).toBeUndefined();
   });
 });

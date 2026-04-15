@@ -74,6 +74,30 @@ describe('apigwRestEdgeRule', () => {
       expect(apigwRestEdgeRule.apply(node, noopContext)).toBeNull();
     });
 
+    it('returns null when sourceArn is an object without Fn::Join', () => {
+      const node = makeNode('aws-cdk-lib.aws_lambda.CfnPermission', 'Stack/Fn/Perm', {
+        principal: 'apigateway.amazonaws.com',
+        sourceArn: { 'Fn::Sub': 'arn:aws:execute-api:us-east-1:123:abc/stage/GET/' },
+      });
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'Stack/Fn' ? container('Stack/Fn') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      expect(apigwRestEdgeRule.apply(node, ctx)).toBeNull();
+    });
+
+    it('returns null when sourceArn Fn::Join parts have no Ref key', () => {
+      const node = makeNode('aws-cdk-lib.aws_lambda.CfnPermission', 'Stack/Fn/Perm', {
+        principal: 'apigateway.amazonaws.com',
+        sourceArn: { 'Fn::Join': ['', [{ 'Fn::GetAtt': ['MyApiABCDEF12', 'RootResourceId'] }]] },
+      });
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'Stack/Fn' ? container('Stack/Fn') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      expect(apigwRestEdgeRule.apply(node, ctx)).toBeNull();
+    });
+
     it('returns null when sourceArn has no Fn::Join Ref', () => {
       const node = makeNode('aws-cdk-lib.aws_lambda.CfnPermission', 'Stack/Fn/Perm', {
         principal: 'apigateway.amazonaws.com',
@@ -139,6 +163,42 @@ describe('apigwWebSocketEdgeRule', () => {
         findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
         findNode: () => undefined,
         findNodeWhere: () => undefined,
+      };
+      expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
+    });
+
+    it('returns null when CfnIntegration has no integrationUri', () => {
+      const integration = makeNode('aws-cdk-lib.aws_apigatewayv2.CfnIntegration', 'Stack/WsApi/Integration', {});
+      const node = makeNode('aws-cdk-lib.aws_apigatewayv2.WebSocketApi', 'Stack/WsApi', {}, [integration]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
+    });
+
+    it('returns null when CfnIntegration integrationUri is an object without Fn::Join', () => {
+      const integration = makeNode(
+        'aws-cdk-lib.aws_apigatewayv2.CfnIntegration', 'Stack/WsApi/Integration',
+        { integrationUri: { 'Fn::Sub': 'arn:aws:apigateway:us-east-1:lambda:path/functions/arn/invocations' } },
+      );
+      const node = makeNode('aws-cdk-lib.aws_apigatewayv2.WebSocketApi', 'Stack/WsApi', {}, [integration]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
+      };
+      expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
+    });
+
+    it('returns null when CfnIntegration Fn::Join parts have no Fn::GetAtt key', () => {
+      const integration = makeNode(
+        'aws-cdk-lib.aws_apigatewayv2.CfnIntegration', 'Stack/WsApi/Integration',
+        { integrationUri: { 'Fn::Join': ['', [{ Ref: 'SomethingABCDEF12' }]] } },
+      );
+      const node = makeNode('aws-cdk-lib.aws_apigatewayv2.WebSocketApi', 'Stack/WsApi', {}, [integration]);
+      const ctx: RuleContext = {
+        findContainer: (id) => id === 'Stack/WsApi' ? container('Stack/WsApi') : undefined,
+        findNode: () => undefined, findNodeWhere: () => undefined,
       };
       expect(apigwWebSocketEdgeRule.apply(node, ctx)).toBeNull();
     });

@@ -21,6 +21,24 @@ function buildLabel(container: ArchContainer): string {
   return escapeLabel(container.label);
 }
 
+function nodeShape(container: ArchContainer, label: string): string {
+  switch (container.containerType) {
+    case 'dynamodb':
+    case 'secret':
+    case 'ssm-parameter':
+      return `[(\"${label}\")]`;
+    case 'queue':
+      return `([\"${label}\"])`;
+    case 'state-machine':
+      return `[[\"${label}\"]]`;
+    case 'apigw-rest':
+    case 'apigw-websocket':
+      return `[/\"${label}\"/]`;
+    default:
+      return `[\"${label}\"]`;
+  }
+}
+
 function renderContainers(
   ids: string[],
   containers: Map<string, ArchContainer>,
@@ -45,7 +63,7 @@ function renderContainers(
       lines.push(renderContainers(children, containers, indent + '  '));
       lines.push(`${indent}end`);
     } else {
-      lines.push(`${indent}${nodeId}["${label}"]`);
+      lines.push(`${indent}${nodeId}${nodeShape(container, label)}`);
     }
   }
 
