@@ -107,4 +107,40 @@ describe('archGraphToMermaid', () => {
     expect(output).toContain('A["FnA"]');
     expect(output).toContain('B["FnB"]');
   });
+
+  // Test 10: containerType-specific node shapes
+  it('dynamodb, secret, ssm-parameter render as cylinder [(label)]', () => {
+    const types: ArchContainer['containerType'][] = ['dynamodb', 'secret', 'ssm-parameter'];
+    for (const containerType of types) {
+      const c: ArchContainer = { id: 'X', label: 'X', containerType, cdkPath: 'X', metadata: {} };
+      const output = archGraphToMermaid(makeGraph([c]));
+      expect(output).toContain('X[("X")]');
+    }
+  });
+
+  it('queue renders as stadium ([label])', () => {
+    const c: ArchContainer = { id: 'Q', label: 'MyQueue', containerType: 'queue', cdkPath: 'Q', metadata: {} };
+    const output = archGraphToMermaid(makeGraph([c]));
+    expect(output).toContain('Q(["MyQueue"])');
+  });
+
+  it('state-machine renders as subroutine [[label]]', () => {
+    const c: ArchContainer = { id: 'SM', label: 'MySM', containerType: 'state-machine', cdkPath: 'SM', metadata: {} };
+    const output = archGraphToMermaid(makeGraph([c]));
+    expect(output).toContain('SM[["MySM"]]');
+  });
+
+  it('apigw-rest and apigw-websocket render as parallelogram [/label/]', () => {
+    for (const containerType of ['apigw-rest', 'apigw-websocket'] as const) {
+      const c: ArchContainer = { id: 'Api', label: 'MyApi', containerType, cdkPath: 'Api', metadata: {} };
+      const output = archGraphToMermaid(makeGraph([c]));
+      expect(output).toContain('Api[/"MyApi"/]');
+    }
+  });
+
+  it('unknown containerType renders as rectangle [label]', () => {
+    const c: ArchContainer = { id: 'X', label: 'X', containerType: 'lambda', cdkPath: 'X', metadata: {} };
+    const output = archGraphToMermaid(makeGraph([c]));
+    expect(output).toContain('X["X"]');
+  });
 });
