@@ -155,6 +155,114 @@ describe('execute — graph building', () => {
     expect(graph.containers.get('Stack/Fn')!.metadata['tier']).toBe('gold');
   });
 
+  // --- T5: origin inference tests ---
+
+  it('origin: container from CDK node with no import sentinel is synthesized', () => {
+    const node = cdkNode('Stack/Fn', 'aws-cdk-lib.aws_lambda.Function', [
+      cdkNode('Stack/Fn/ExecutionRole', 'aws-cdk-lib.aws_iam.Role'),
+    ]);
+    const tree = makeTree(cdkNode('Stack', 's', [node]));
+    const rules = [containerRule('Stack/Fn', 'Fn', 'lambda')];
+    const graph = execute(tree, rules);
+    expect(graph.containers.get('Stack/Fn')!.origin).toBe('synthesized');
+  });
+
+  it('origin: container from CDK node with import sentinel child is imported', () => {
+    const importSentinel = cdkNode('Stack/Queue/ImportQueue', 'aws-cdk-lib.Resource', []);
+    const node = cdkNode('Stack/Queue', 'aws-cdk-lib.aws_sqs.Queue', [importSentinel]);
+    const tree = makeTree(cdkNode('Stack', 's', [node]));
+    const rules = [containerRule('Stack/Queue', 'Queue', 'queue')];
+    const graph = execute(tree, rules);
+    expect(graph.containers.get('Stack/Queue')!.origin).toBe('imported');
+  });
+
+  it('origin: import-sentinel-like child WITH children does not trigger imported', () => {
+    const grandchild = cdkNode('Stack/Queue/ImportQueue/Resource', 'aws-cdk-lib.CfnResource', []);
+    const sentinelWithChildren = cdkNode('Stack/Queue/ImportQueue', 'aws-cdk-lib.Resource', [grandchild]);
+    const node = cdkNode('Stack/Queue', 'aws-cdk-lib.aws_sqs.Queue', [sentinelWithChildren]);
+    const tree = makeTree(cdkNode('Stack', 's', [node]));
+    const rules = [containerRule('Stack/Queue', 'Queue', 'queue')];
+    const graph = execute(tree, rules);
+    expect(graph.containers.get('Stack/Queue')!.origin).toBe('synthesized');
+  });
+
+  it('origin: synthetically created container (rule-only, no CdkNode) is synthetic', () => {
+    const map: RuleOutputMap = new Map();
+    map.set('synthetic/Container', {
+      primary: { kind: 'container', label: 'Synthetic', containerType: 'test' },
+      edges: [],
+      metadata: [],
+      sourceFqn: 'x',
+    });
+    const graph = buildGraph(map);
+    expect(graph.containers.get('synthetic/Container')!.origin).toBe('synthetic');
+  });
+
+  // --- T5: style propagation tests ---
+
+  it('style: edge built with style dashed has edge.style === dashed', () => {
+    const tree = makeTree(cdkNode('n1'));
+    const rules: Rule[] = [
+      {
+        id: 'test/styled-edge', priority: 50,
+        match(n) { return n.path === 'n1'; },
+        apply(): RuleOutput { return { kind: 'edge', sourceId: 'src', targetId: 'tgt', style: 'dashed' }; },
+      },
+    ];
+    const graph = execute(tree, rules);
+    expect(graph.edges[0].style).toBe('dashed');
+  });
+
+  it('style: edge built without style has edge.style === undefined', () => {
+    const tree = makeTree(cdkNode('n1'));
+    const rules: Rule[] = [
+      {
+        id: 'test/no-style-edge', priority: 50,
+        match(n) { return n.path === 'n1'; },
+        apply(): RuleOutput { return { kind: 'edge', sourceId: 'src', targetId: 'tgt' }; },
+      },
+    ];
+    const graph = execute(tree, rules);
+    expect(graph.edges[0].style).toBeUndefined();
+  });
+
+  it('style: edge built with style orthogonal has edge.style === orthogonal', () => {
+    const tree = makeTree(cdkNode('n1'));
+    const rules: Rule[] = [
+      {
+        id: 'test/orthogonal-edge', priority: 50,
+        match(n) { return n.path === 'n1'; },
+        apply(): RuleOutput { return { kind: 'edge', sourceId: 'src', targetId: 'tgt', style: 'orthogonal' }; },
+      },
+    ];
+    const graph = execute(tree, rules);
+    expect(graph.edges[0].style).toBe('orthogonal');
+  });
+
+  it('style: edges (plural) kind propagates style to each resulting ArchEdge', () => {
+    const tree = makeTree(cdkNode('n1'));
+    const rules: Rule[] = [
+      {
+        id: 'test/edges-style', priority: 50,
+        match(n) { return n.path === 'n1'; },
+        apply(): RuleOutput {
+          return {
+            kind: 'edges',
+            items: [
+              { sourceId: 'a', targetId: 'b', style: 'dashed' },
+              { sourceId: 'c', targetId: 'd' },
+            ],
+          };
+        },
+      },
+    ];
+    const graph = execute(tree, rules);
+    const ab = graph.edges.find(e => e.sourceId === 'a');
+    const cd = graph.edges.find(e => e.sourceId === 'c');
+    expect(ab!.style).toBe('dashed');
+    expect(cd!.style).toBeUndefined();
+  });
+
   // Test 12: orphaned metadata warning with non-empty edge list — covers some() callback
   it('orphaned metadata with other edges present: some() callback called; warning emitted', () => {
     const n1 = cdkNode('n1');

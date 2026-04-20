@@ -9,7 +9,7 @@ function makeNode(fqn: string, path: string, attributes: Record<string, unknown>
 }
 
 function container(id: string): ArchContainer {
-  return { id, label: id, containerType: 'state-machine', cdkPath: id, metadata: {} };
+  return { id, label: id, containerType: 'state-machine', cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 function makeCfnStateMachineNode(path: string, definitionParts: unknown[]): CdkNode {

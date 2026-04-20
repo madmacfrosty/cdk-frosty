@@ -5,9 +5,46 @@ import { parse } from './parser';
 import { loadRules } from './rules/registry';
 import { execute } from './engine';
 import { render } from './renderer';
+import { ArchGraph } from './engine/types';
 
 function stripAnsi(str: string): string {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function loadRenderer(rendererPath: string, graph: ArchGraph): string {
+  if (!require('fs').existsSync(rendererPath)) {
+    throw { exitCode: 5, message: `Renderer module not found: ${rendererPath}` };
+  }
+
+  let mod: unknown;
+  try {
+    mod = require(rendererPath);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw { exitCode: 5, message: `Failed to load renderer from ${rendererPath}: ${stripAnsi(msg)}` };
+  }
+
+  const m = mod as Record<string, unknown>;
+  if (typeof m.render !== 'function') {
+    if (!('render' in m)) {
+      throw { exitCode: 5, message: `Renderer module at ${rendererPath} does not export a "render" function` };
+    }
+    throw { exitCode: 5, message: `Renderer module at ${rendererPath}: "render" export is not a function` };
+  }
+
+  let result: unknown;
+  try {
+    result = m.render(graph);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw { exitCode: 5, message: `Renderer render() threw: ${stripAnsi(msg)}` };
+  }
+
+  if (result === null || result === undefined) {
+    throw { exitCode: 5, message: `Renderer render() returned ${result === null ? 'null' : 'undefined'}; expected a non-empty value` };
+  }
+
+  return String(result);
 }
 
 function main(): void {
@@ -21,8 +58,9 @@ function main(): void {
     .option('--output <path>', 'Output HTML file path')
     .option('--rules <path>', 'Additional rules file (repeatable)')
     .option('--stack <pattern>', 'Only include stacks whose name contains this pattern (case-insensitive)')
+    .option('--renderer <path>', 'Path to external renderer module (must export a render function)')
     .on('option:rules', (value: string) => { rulesPaths.push(value); })
-    .action((input: string, options: { output?: string; stack?: string }) => {
+    .action((input: string, options: { output?: string; stack?: string; renderer?: string }) => {
       const outputPath = options.output
         ? options.output
         : path.join(
@@ -34,8 +72,14 @@ function main(): void {
         const tree = parse(input);
         const rules = loadRules(rulesPaths, options.stack);
         const graph = execute(tree, rules);
-        const html = render(graph);
-        fs.writeFileSync(outputPath, html);
+        let output: string;
+        if (options.renderer) {
+          const rendererPath = path.resolve(options.renderer);
+          output = loadRenderer(rendererPath, graph);
+        } else {
+          output = render(graph);
+        }
+        fs.writeFileSync(outputPath, output);
         process.stdout.write(`Architecture diagram written to: ${path.resolve(outputPath)}\n`);
       } catch (err) {
         if (err && typeof err === 'object' && 'exitCode' in err) {

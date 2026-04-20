@@ -3,7 +3,7 @@ import { CdkNode } from '../../parser/types';
 import { ArchContainer, RuleContext } from '../../engine/types';
 
 function container(id: string, type = 'queue'): ArchContainer {
-  return { id, label: id, containerType: type, cdkPath: id, metadata: {} };
+  return { id, label: id, containerType: type, cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 function makeEsmNode(props: Record<string, unknown>): CdkNode {

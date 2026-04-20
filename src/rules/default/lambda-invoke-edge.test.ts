@@ -3,7 +3,7 @@ import { CdkNode } from '../../parser/types';
 import { ArchContainer, RuleContext } from '../../engine/types';
 
 function container(id: string): ArchContainer {
-  return { id, label: id, containerType: 'lambda', cdkPath: id, metadata: {} };
+  return { id, label: id, containerType: 'lambda', cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 function makePolicyResource(statements: unknown[]): CdkNode {

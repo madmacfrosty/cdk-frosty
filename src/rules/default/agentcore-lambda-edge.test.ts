@@ -5,7 +5,7 @@ import { ArchContainer, RuleContext } from '../../engine/types';
 const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function makeRuntime(id: string): ArchContainer {
-  return { id, label: id.split('/').at(-1) ?? id, containerType: 'agentcore-runtime', cdkPath: id, metadata: {} };
+  return { id, label: id.split('/').at(-1) ?? id, containerType: 'agentcore-runtime', cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 function makeLambdaNode(policyStatements: unknown[], id = 'MyFunction', stackName = 'AppStack'): CdkNode {

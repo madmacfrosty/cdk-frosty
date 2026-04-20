@@ -3,7 +3,7 @@ import { CdkNode } from '../../parser/types';
 import { ArchContainer, RuleContext } from '../../engine/types';
 
 function container(id: string): ArchContainer {
-  return { id, label: id, containerType: 'apigw-rest', cdkPath: id, metadata: {} };
+  return { id, label: id, containerType: 'apigw-rest', cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 function makeNode(fqn: string, path: string, props: Record<string, unknown> = {}, children: CdkNode[] = []): CdkNode {
