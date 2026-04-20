@@ -7,6 +7,7 @@ jest.mock('./renderer', () => ({ render: jest.fn() }));
 jest.mock('fs', () => ({
   ...jest.requireActual('fs'),
   writeFileSync: jest.fn(),
+  existsSync: jest.fn().mockReturnValue(true),
 }));
 
 import * as fs from 'fs';
@@ -14,6 +15,8 @@ import { parse } from './parser';
 import { loadRules } from './rules/registry';
 import { execute } from './engine';
 import { render } from './renderer';
+
+const mockExistsSync = fs.existsSync as jest.MockedFunction<typeof fs.existsSync>;
 
 const mockParse = parse as jest.MockedFunction<typeof parse>;
 const mockLoadRules = loadRules as jest.MockedFunction<typeof loadRules>;
@@ -29,7 +32,7 @@ function executeCli(args: string[]): void {
   jest.mock('./rules/registry', () => ({ loadRules: mockLoadRules }));
   jest.mock('./engine', () => ({ execute: mockRun }));
   jest.mock('./renderer', () => ({ render: mockRender }));
-  jest.mock('fs', () => ({ ...jest.requireActual('fs'), writeFileSync: mockWriteFileSync }));
+  jest.mock('fs', () => ({ ...jest.requireActual('fs'), writeFileSync: mockWriteFileSync, existsSync: mockExistsSync }));
 
   process.argv = ['node', 'cli.js', ...args];
   try {
@@ -143,5 +146,156 @@ describe('CLI unit tests', () => {
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).not.toContain('\x1b[');
     expect(stderr).toContain('/bad/path');
+  });
+});
+
+// --- T4: --renderer CLI flag tests ---
+
+function executeCliWithRenderer(
+  args: string[],
+  rendererModule: Record<string, unknown> | null,
+): void {
+  jest.resetModules();
+  jest.mock('./parser', () => ({ parse: mockParse }));
+  jest.mock('./rules/registry', () => ({ loadRules: mockLoadRules }));
+  jest.mock('./engine', () => ({ execute: mockRun }));
+  jest.mock('./renderer', () => ({ render: mockRender }));
+  jest.mock('fs', () => ({ ...jest.requireActual('fs'), writeFileSync: mockWriteFileSync, existsSync: mockExistsSync }));
+  if (rendererModule !== null) {
+    jest.doMock('/mock/renderer.js', () => rendererModule, { virtual: true });
+  }
+  process.argv = ['node', 'cli.js', ...args];
+  try {
+    require('./cli');
+  } catch {
+    // commander may throw on exitOverride
+  }
+}
+
+describe('CLI --renderer flag tests', () => {
+  let exitSpy: jest.SpyInstance;
+  let stderrSpy: jest.SpyInstance;
+  let stdoutSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => {}) as never);
+    stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
+    const fakeTree = { version: 'tree-0.1', root: { id: 'App', path: 'App', fqn: 'x', children: [], attributes: {} } };
+    const fakeRules: never[] = [];
+    const fakeGraph = { containers: new Map(), edges: [], roots: [] };
+    mockParse.mockReturnValue(fakeTree);
+    mockLoadRules.mockReturnValue(fakeRules);
+    mockRun.mockReturnValue(fakeGraph);
+    mockRender.mockReturnValue('<html>default</html>');
+    mockWriteFileSync.mockImplementation(() => undefined);
+    mockExistsSync.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
+    stderrSpy.mockRestore();
+    stdoutSpy.mockRestore();
+    jest.resetModules();
+  });
+
+  // T4-1: valid renderer — render called once with correct graph; writeFileSync receives return value
+  it('valid renderer: render called once with graph; writeFileSync receives renderer output', () => {
+    const fakeGraph = { containers: new Map(), edges: [], roots: [] };
+    mockRun.mockReturnValue(fakeGraph);
+    const mockRendererRender = jest.fn().mockReturnValue('<svg>diagram</svg>');
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--output', '/out/result.html', '--renderer', '/mock/renderer.js'],
+      { render: mockRendererRender },
+    );
+    expect(mockRendererRender).toHaveBeenCalledTimes(1);
+    expect(mockRendererRender).toHaveBeenCalledWith(fakeGraph);
+    expect(mockWriteFileSync).toHaveBeenCalledWith('/out/result.html', '<svg>diagram</svg>');
+  });
+
+  // T4-2: valid renderer — render called with deep-equal graph from execute()
+  it('valid renderer: render called with the exact graph object from execute()', () => {
+    const specificGraph = { containers: new Map([['a', { id: 'a', label: 'A', containerType: 'lambda', cdkPath: 'a', origin: 'synthesized' as const, metadata: {} }]]), edges: [], roots: ['a'] };
+    mockRun.mockReturnValue(specificGraph);
+    const mockRendererRender = jest.fn().mockReturnValue('output');
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--output', '/out/result.html', '--renderer', '/mock/renderer.js'],
+      { render: mockRendererRender },
+    );
+    expect(mockRendererRender).toHaveBeenCalledWith(specificGraph);
+  });
+
+  // T4-3: nonexistent renderer path — exit non-zero; stderr contains path
+  it('nonexistent renderer path: exit non-zero; stderr contains path', () => {
+    mockExistsSync.mockImplementation((p: unknown) => p !== '/mock/renderer.js');
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
+      null,
+    );
+    expect(exitSpy).toHaveBeenCalledWith(expect.any(Number));
+    const code = (exitSpy.mock.calls[0] as number[])[0];
+    expect(code).toBeGreaterThan(0);
+    const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
+    expect(stderr).toContain('/mock/renderer.js');
+  });
+
+  // T4-4: module missing render export — exit non-zero; stderr describes missing export
+  it('module missing render export: exit non-zero; stderr describes missing export', () => {
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
+      { notRender: () => 'nope' },
+    );
+    expect(exitSpy).toHaveBeenCalledWith(expect.any(Number));
+    const code = (exitSpy.mock.calls[0] as number[])[0];
+    expect(code).toBeGreaterThan(0);
+    const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
+    expect(stderr).toContain('render');
+  });
+
+  // T4-5: renderer render() throws synchronously — exit non-zero
+  it('renderer render() throws synchronously: exit non-zero', () => {
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
+      { render: () => { throw new Error('renderer crash'); } },
+    );
+    expect(exitSpy).toHaveBeenCalledWith(expect.any(Number));
+    const code = (exitSpy.mock.calls[0] as number[])[0];
+    expect(code).toBeGreaterThan(0);
+  });
+
+  // T4-6: --renderer absent — default render from ./renderer is called; no dynamic loader
+  it('--renderer absent: default render called; process.exit not called', () => {
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--output', '/out/result.html'],
+      null,
+    );
+    expect(mockRender).toHaveBeenCalledTimes(1);
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  // T4-7: renderer render() returns null — exit non-zero; no file written
+  it('renderer render() returns null: exit non-zero; writeFileSync not called', () => {
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
+      { render: () => null },
+    );
+    expect(exitSpy).toHaveBeenCalledWith(expect.any(Number));
+    const code = (exitSpy.mock.calls[0] as number[])[0];
+    expect(code).toBeGreaterThan(0);
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  // T4-8: renderer render() returns undefined — exit non-zero; no file written
+  it('renderer render() returns undefined: exit non-zero; writeFileSync not called', () => {
+    executeCliWithRenderer(
+      ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
+      { render: () => undefined },
+    );
+    expect(exitSpy).toHaveBeenCalledWith(expect.any(Number));
+    const code = (exitSpy.mock.calls[0] as number[])[0];
+    expect(code).toBeGreaterThan(0);
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 });

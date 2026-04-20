@@ -1,10 +1,13 @@
 import { CdkNode } from '../parser/types';
 
+export type ContainerOrigin = 'synthesized' | 'imported' | 'synthetic';
+
 export interface ArchContainer {
   id: string;
   label: string;
   containerType: string;
   cdkPath: string;
+  origin: ContainerOrigin;
   parentId?: string;
   groupId?: string;
   groupLabel?: string;
@@ -16,6 +19,7 @@ export interface ArchEdge {
   sourceId: string;
   targetId: string;
   label?: string;
+  style?: string;
   metadata: Record<string, unknown>;
 }
 
@@ -27,8 +31,8 @@ export interface ArchGraph {
 
 export type RuleOutput =
   | { kind: 'container'; label: string; containerType: string }
-  | { kind: 'edge'; sourceId: string; targetId: string; label?: string }
-  | { kind: 'edges'; items: Array<{ sourceId: string; targetId: string; label?: string }> }
+  | { kind: 'edge'; sourceId: string; targetId: string; label?: string; style?: string }
+  | { kind: 'edges'; items: Array<{ sourceId: string; targetId: string; label?: string; style?: string }> }
   | { kind: 'metadata'; targetEdgeSourceId: string; targetEdgeTargetId: string; key: string; value: unknown }
   | { kind: 'group'; groupLabel: string; memberFqn?: string }
   | null;
@@ -46,11 +50,12 @@ export interface Rule {
   apply(node: CdkNode, context: RuleContext): RuleOutput;
 }
 
-export type EdgeItem = { sourceId: string; targetId: string; label?: string };
+export type EdgeItem = { sourceId: string; targetId: string; label?: string; style?: string };
 
 export type RuleOutputMap = Map<string, {
   primary: RuleOutput;
   edges: EdgeItem[];
   metadata: RuleOutput[];
   sourceFqn: string;
+  node?: CdkNode;
 }>;

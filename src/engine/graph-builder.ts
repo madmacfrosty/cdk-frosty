@@ -1,4 +1,14 @@
-import { RuleOutput, RuleOutputMap, ArchContainer, ArchEdge, ArchGraph } from './types';
+import { RuleOutput, RuleOutputMap, ArchContainer, ArchEdge, ArchGraph, ContainerOrigin } from './types';
+import { CdkNode } from '../parser/types';
+
+export function inferOrigin(node: CdkNode): ContainerOrigin {
+  const hasImportSentinel = node.children.some(
+    c => c.id.startsWith('Import') &&
+         c.fqn === 'aws-cdk-lib.Resource' &&
+         c.children.length === 0
+  );
+  return hasImportSentinel ? 'imported' : 'synthesized';
+}
 
 export function buildGraph(outputMap: RuleOutputMap): ArchGraph {
   const containers = new Map<string, ArchContainer>();
@@ -12,11 +22,13 @@ export function buildGraph(outputMap: RuleOutputMap): ArchGraph {
     const { primary, metadata } = entry;
 
     if (primary && primary.kind === 'container') {
+      const origin: ContainerOrigin = entry.node ? inferOrigin(entry.node) : 'synthetic';
       const container: ArchContainer = {
         id: cdkPath,
         label: primary.label,
         containerType: primary.containerType,
         cdkPath,
+        origin,
         metadata: {},
       };
       for (const m of metadata) {
@@ -77,6 +89,7 @@ export function buildGraph(outputMap: RuleOutputMap): ArchGraph {
         sourceId: item.sourceId,
         targetId: item.targetId,
         label: item.label,
+        style: item.style,
         metadata: {},
       };
 

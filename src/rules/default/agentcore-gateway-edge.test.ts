@@ -5,7 +5,7 @@ import { ArchContainer, RuleContext } from '../../engine/types';
 const noopContext: RuleContext = { findContainer: () => undefined, findNode: () => undefined, findNodeWhere: () => undefined };
 
 function container(id: string): ArchContainer {
-  return { id, label: id.split('/').at(-1) ?? id, containerType: 'test', cdkPath: id, metadata: {} };
+  return { id, label: id.split('/').at(-1) ?? id, containerType: 'test', cdkPath: id, origin: 'synthesized', metadata: {} };
 }
 
 // --- agentcoreRuntimeGatewayEdgeRule ---

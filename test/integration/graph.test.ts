@@ -47,4 +47,14 @@ describe('integration: graph snapshot', () => {
     const graph = execute(tree, rules);
     expect(serializeGraph(graph)).toMatchSnapshot();
   });
+
+  it('every container in the real graph has a valid origin', () => {
+    const tree = parse(FIXTURE);
+    const rules = [...defaultRules, ...projectRules];
+    const graph = execute(tree, rules);
+    const validOrigins = new Set(['synthesized', 'imported', 'synthetic']);
+    for (const container of graph.containers.values()) {
+      expect(validOrigins.has(container.origin)).toBe(true);
+    }
+  });
 });

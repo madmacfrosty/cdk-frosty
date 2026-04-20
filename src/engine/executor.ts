@@ -1,7 +1,7 @@
 import { CdkNode, CdkTree } from '../parser/types';
 import { Rule, RuleContext, RuleOutput, RuleOutputMap, EdgeItem, ArchContainer, ArchGraph } from './types';
 import { evaluateNode } from './evaluator';
-import { buildGraph } from './graph-builder';
+import { buildGraph, inferOrigin } from './graph-builder';
 
 function flattenTree(node: CdkNode): CdkNode[] {
   const result: CdkNode[] = [node];
@@ -29,7 +29,7 @@ export function execute(tree: CdkTree, rules: Rule[]): ArchGraph {
   // Pass 1: populate matchCache, collect containers
   for (const node of nodes) {
     const result = evaluateNode(node, rules, matchCache, pass1Context);
-    outputMap.set(node.path, { primary: result.primary, edges: [], metadata: result.metadata, sourceFqn: node.fqn });
+    outputMap.set(node.path, { primary: result.primary, edges: [], metadata: result.metadata, sourceFqn: node.fqn, node });
 
     if (result.primary && result.primary.kind === 'container') {
       containerMap.set(node.path, {
@@ -37,6 +37,7 @@ export function execute(tree: CdkTree, rules: Rule[]): ArchGraph {
         label: result.primary.label,
         containerType: result.primary.containerType,
         cdkPath: node.path,
+        origin: inferOrigin(node),
         metadata: {},
       });
     }
@@ -125,6 +126,7 @@ export function execute(tree: CdkTree, rules: Rule[]): ArchGraph {
       edges: [...existing.edges, ...newEdges],
       metadata: [...existing.metadata, ...newMetadata],
       sourceFqn: node.fqn,
+      node,
     });
   }
 
