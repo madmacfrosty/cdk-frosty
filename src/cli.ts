@@ -11,7 +11,7 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-function loadRenderer(rendererPath: string, graph: ArchGraph): string {
+async function loadRenderer(rendererPath: string, graph: ArchGraph): Promise<string> {
   if (!require('fs').existsSync(rendererPath)) {
     throw { exitCode: 5, message: `Renderer module not found: ${rendererPath}` };
   }
@@ -34,7 +34,7 @@ function loadRenderer(rendererPath: string, graph: ArchGraph): string {
 
   let result: unknown;
   try {
-    result = m.render(graph);
+    result = await m.render(graph);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw { exitCode: 5, message: `Renderer render() threw: ${stripAnsi(msg)}` };
@@ -47,7 +47,7 @@ function loadRenderer(rendererPath: string, graph: ArchGraph): string {
   return String(result);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const program = new Command();
   const rulesPaths: string[] = [];
 
@@ -60,7 +60,7 @@ function main(): void {
     .option('--stack <pattern>', 'Only include stacks whose name contains this pattern (case-insensitive)')
     .option('--renderer <path>', 'Path to external renderer module (must export a render function)')
     .on('option:rules', (value: string) => { rulesPaths.push(value); })
-    .action((input: string, options: { output?: string; stack?: string; renderer?: string }) => {
+    .action(async (input: string, options: { output?: string; stack?: string; renderer?: string }) => {
       const outputPath = options.output
         ? options.output
         : path.join(
@@ -75,7 +75,7 @@ function main(): void {
         let output: string;
         if (options.renderer) {
           const rendererPath = path.resolve(options.renderer);
-          output = loadRenderer(rendererPath, graph);
+          output = await loadRenderer(rendererPath, graph);
         } else {
           output = render(graph);
         }
@@ -100,12 +100,16 @@ function main(): void {
     process.exit(1);
   });
 
-  program.parse(process.argv);
-
   // If no args provided, commander will not invoke action — print help
   if (process.argv.length <= 2) {
     program.help();
   }
+
+  await program.parseAsync(process.argv);
 }
 
-main();
+export { main };
+
+if (require.main === module) {
+  main();
+}

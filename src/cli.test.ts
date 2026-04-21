@@ -24,7 +24,7 @@ const mockRun = execute as jest.MockedFunction<typeof execute>;
 const mockRender = render as jest.MockedFunction<typeof render>;
 const mockWriteFileSync = fs.writeFileSync as jest.MockedFunction<typeof fs.writeFileSync>;
 
-function executeCli(args: string[]): void {
+async function executeCli(args: string[]): Promise<void> {
   // Reset module cache and re-require cli to re-execute main()
   jest.resetModules();
   // Re-apply mocks after resetModules
@@ -36,7 +36,8 @@ function executeCli(args: string[]): void {
 
   process.argv = ['node', 'cli.js', ...args];
   try {
-    require('./cli');
+    const mod = require('./cli') as { main: () => Promise<void> };
+    await mod.main();
   } catch {
     // commander may throw on exitOverride
   }
@@ -72,59 +73,59 @@ describe('CLI unit tests', () => {
   });
 
   // Test 1: parse throws exitCode 1
-  it('parse() throws exitCode 1: process.exit(1) and Error [1] on stderr', () => {
+  it('parse() throws exitCode 1: process.exit(1) and Error [1] on stderr', async () => {
     mockParse.mockImplementation(() => { throw { exitCode: 1, message: 'File not found: /bad' }; });
-    executeCli(['/bad/tree.json']);
+    await executeCli(['/bad/tree.json']);
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).toContain('Error [1]');
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   // Test 2: parse throws exitCode 2
-  it('parse() throws exitCode 2: process.exit(2) and Error [2] on stderr', () => {
+  it('parse() throws exitCode 2: process.exit(2) and Error [2] on stderr', async () => {
     mockParse.mockImplementation(() => { throw { exitCode: 2, message: 'Invalid JSON' }; });
-    executeCli(['/bad/tree.json']);
+    await executeCli(['/bad/tree.json']);
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).toContain('Error [2]');
     expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
   // Test 3: loadRules throws exitCode 3
-  it('loadRules() throws exitCode 3: process.exit(3) and Error [3] on stderr', () => {
+  it('loadRules() throws exitCode 3: process.exit(3) and Error [3] on stderr', async () => {
     mockLoadRules.mockImplementation(() => { throw { exitCode: 3, message: 'Rules file not found' }; });
-    executeCli(['/ok/tree.json']);
+    await executeCli(['/ok/tree.json']);
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).toContain('Error [3]');
     expect(exitSpy).toHaveBeenCalledWith(3);
   });
 
   // Test 4: unhandled exception → exit 4
-  it('unhandled exception: process.exit(4) and Error [4] on stderr', () => {
+  it('unhandled exception: process.exit(4) and Error [4] on stderr', async () => {
     mockRun.mockImplementation(() => { throw new Error('unexpected'); });
-    executeCli(['/ok/tree.json']);
+    await executeCli(['/ok/tree.json']);
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).toContain('Error [4]');
     expect(exitSpy).toHaveBeenCalledWith(4);
   });
 
   // Test 5: writeFileSync throws → exit 4
-  it('writeFileSync throwing: process.exit(4)', () => {
+  it('writeFileSync throwing: process.exit(4)', async () => {
     mockWriteFileSync.mockImplementation(() => { throw new Error('disk full'); });
-    executeCli(['/ok/tree.json']);
+    await executeCli(['/ok/tree.json']);
     expect(exitSpy).toHaveBeenCalledWith(4);
   });
 
   // Test 6: success — no exit call; stdout confirmation
-  it('all mocks succeed: no process.exit call; stdout contains "Architecture diagram written to:"', () => {
-    executeCli(['/ok/tree.json', '--output', '/out/result.html']);
+  it('all mocks succeed: no process.exit call; stdout contains "Architecture diagram written to:"', async () => {
+    await executeCli(['/ok/tree.json', '--output', '/out/result.html']);
     const stdout = (stdoutSpy.mock.calls as string[][]).flat().join('');
     expect(stdout).toContain('Architecture diagram written to:');
     expect(exitSpy).not.toHaveBeenCalled();
   });
 
   // Test 7: output path defaulting
-  it('output path defaults to input-dir/input-basename.html', () => {
-    executeCli(['/a/b/tree.json']);
+  it('output path defaults to input-dir/input-basename.html', async () => {
+    await executeCli(['/a/b/tree.json']);
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       expect.stringContaining('/a/b/tree.html'),
       expect.any(String)
@@ -132,17 +133,17 @@ describe('CLI unit tests', () => {
   });
 
   // Test 8: --rules flag twice — both paths passed to loadRules
-  it('--rules flag twice: both paths passed to loadRules', () => {
-    executeCli(['/ok/tree.json', '--rules', '/rules/a.js', '--rules', '/rules/b.js']);
+  it('--rules flag twice: both paths passed to loadRules', async () => {
+    await executeCli(['/ok/tree.json', '--rules', '/rules/a.js', '--rules', '/rules/b.js']);
     expect(mockLoadRules).toHaveBeenCalledWith(['/rules/a.js', '/rules/b.js'], undefined);
   });
 
   // Test 9: ANSI sequences stripped from error message
-  it('ANSI sequence in error message: stripped from stderr output', () => {
+  it('ANSI sequence in error message: stripped from stderr output', async () => {
     mockParse.mockImplementation(() => {
       throw { exitCode: 1, message: '\x1b[31m/bad/path\x1b[0m not found' };
     });
-    executeCli(['/bad/tree.json']);
+    await executeCli(['/bad/tree.json']);
     const stderr = (stderrSpy.mock.calls as string[][]).flat().join('');
     expect(stderr).not.toContain('\x1b[');
     expect(stderr).toContain('/bad/path');
@@ -151,10 +152,10 @@ describe('CLI unit tests', () => {
 
 // --- T4: --renderer CLI flag tests ---
 
-function executeCliWithRenderer(
+async function executeCliWithRenderer(
   args: string[],
   rendererModule: Record<string, unknown> | null,
-): void {
+): Promise<void> {
   jest.resetModules();
   jest.mock('./parser', () => ({ parse: mockParse }));
   jest.mock('./rules/registry', () => ({ loadRules: mockLoadRules }));
@@ -166,7 +167,8 @@ function executeCliWithRenderer(
   }
   process.argv = ['node', 'cli.js', ...args];
   try {
-    require('./cli');
+    const mod = require('./cli') as { main: () => Promise<void> };
+    await mod.main();
   } catch {
     // commander may throw on exitOverride
   }
@@ -202,11 +204,11 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-1: valid renderer — render called once with correct graph; writeFileSync receives return value
-  it('valid renderer: render called once with graph; writeFileSync receives renderer output', () => {
+  it('valid renderer: render called once with graph; writeFileSync receives renderer output', async () => {
     const fakeGraph = { containers: new Map(), edges: [], roots: [] };
     mockRun.mockReturnValue(fakeGraph);
     const mockRendererRender = jest.fn().mockReturnValue('<svg>diagram</svg>');
-    executeCliWithRenderer(
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--output', '/out/result.html', '--renderer', '/mock/renderer.js'],
       { render: mockRendererRender },
     );
@@ -216,11 +218,11 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-2: valid renderer — render called with deep-equal graph from execute()
-  it('valid renderer: render called with the exact graph object from execute()', () => {
+  it('valid renderer: render called with the exact graph object from execute()', async () => {
     const specificGraph = { containers: new Map([['a', { id: 'a', label: 'A', containerType: 'lambda', cdkPath: 'a', origin: 'synthesized' as const, metadata: {} }]]), edges: [], roots: ['a'] };
     mockRun.mockReturnValue(specificGraph);
     const mockRendererRender = jest.fn().mockReturnValue('output');
-    executeCliWithRenderer(
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--output', '/out/result.html', '--renderer', '/mock/renderer.js'],
       { render: mockRendererRender },
     );
@@ -228,9 +230,9 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-3: nonexistent renderer path — exit non-zero; stderr contains path
-  it('nonexistent renderer path: exit non-zero; stderr contains path', () => {
+  it('nonexistent renderer path: exit non-zero; stderr contains path', async () => {
     mockExistsSync.mockImplementation((p: unknown) => p !== '/mock/renderer.js');
-    executeCliWithRenderer(
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
       null,
     );
@@ -242,8 +244,8 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-4: module missing render export — exit non-zero; stderr describes missing export
-  it('module missing render export: exit non-zero; stderr describes missing export', () => {
-    executeCliWithRenderer(
+  it('module missing render export: exit non-zero; stderr describes missing export', async () => {
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
       { notRender: () => 'nope' },
     );
@@ -255,8 +257,8 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-5: renderer render() throws synchronously — exit non-zero
-  it('renderer render() throws synchronously: exit non-zero', () => {
-    executeCliWithRenderer(
+  it('renderer render() throws synchronously: exit non-zero', async () => {
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
       { render: () => { throw new Error('renderer crash'); } },
     );
@@ -266,8 +268,8 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-6: --renderer absent — default render from ./renderer is called; no dynamic loader
-  it('--renderer absent: default render called; process.exit not called', () => {
-    executeCliWithRenderer(
+  it('--renderer absent: default render called; process.exit not called', async () => {
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--output', '/out/result.html'],
       null,
     );
@@ -276,8 +278,8 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-7: renderer render() returns null — exit non-zero; no file written
-  it('renderer render() returns null: exit non-zero; writeFileSync not called', () => {
-    executeCliWithRenderer(
+  it('renderer render() returns null: exit non-zero; writeFileSync not called', async () => {
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
       { render: () => null },
     );
@@ -288,8 +290,8 @@ describe('CLI --renderer flag tests', () => {
   });
 
   // T4-8: renderer render() returns undefined — exit non-zero; no file written
-  it('renderer render() returns undefined: exit non-zero; writeFileSync not called', () => {
-    executeCliWithRenderer(
+  it('renderer render() returns undefined: exit non-zero; writeFileSync not called', async () => {
+    await executeCliWithRenderer(
       ['/ok/tree.json', '--renderer', '/mock/renderer.js'],
       { render: () => undefined },
     );
