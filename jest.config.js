@@ -5,4 +5,9 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   passWithNoTests: true,
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
 };
